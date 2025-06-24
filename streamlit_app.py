@@ -80,45 +80,36 @@ if st.button("+ Ajouter ce test"):
 **Fréquence :** 1 session spécifique/semaine  
 **Cible :** Transfert vers les matchs"""
 
+        # Dados do teste
         test_data = {
             "Nom": nom,
             "Âge": age,
             "Pied": pied,
             "Niveau de pression": pression,
             "Nb passes réussies": nb_acertes,
-            "Temps moyen": temps_moyen,
+            "Temps moyen (s)": temps_moyen,
             "Précision (%)": precision,
             "Plan d'action": plan
         }
 
+        # Salvar localmente na sessão
         st.session_state["tests"].append(test_data)
 
         # Salvar no Google Sheets
-       from datetime import datetime
+        from datetime import datetime
+        date = datetime.now().strftime("%Y-%m-%d")
+        exercice = "Passe"
 
-# ...
+        worksheet.append_row([
+            date,
+            test_data["Nom"],
+            test_data["Âge"],
+            exercice,
+            test_data["Pied"],
+            test_data["Niveau de pression"],
+            test_data["Précision (%)"],
+            test_data["Temps moyen (s)"],
+            test_data["Plan d'action"]
+        ])
 
-st.session_state["tests"].append(test_data)
-
-# 🟢 Adicionar data e tipo de exercício
-date = datetime.now().strftime("%Y-%m-%d")
-exercice = "Passe"
-
-# 🟢 Salvar no Google Sheets com colunas completas e na ordem certa
-worksheet.append_row([
-    date,
-    test_data["Nom"],
-    test_data["Âge"],
-    exercice,
-    test_data["Pied"],
-    test_data["Niveau de pression"],
-    test_data["Précision (%)"],
-    test_data["Temps moyen (s)"],
-    test_data["Plan d'action"]
-])
-
-st.success("✅ Teste adicionado com sucesso com plan d’action professionnel!")
-
-
-
-
+        st.success("✅ Teste adicionado com sucesso com plan d’action professionnel!")
