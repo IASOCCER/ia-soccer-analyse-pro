@@ -2,18 +2,14 @@ import streamlit as st
 import pandas as pd
 import openai
 
-# Configuração da página
 st.set_page_config(page_title="IA Soccer – Conduite de Balle avec IA", layout="wide")
 st.title("🚀 IA Soccer – Analyse de Conduite de Balle (avec Intelligence Artificielle)")
 
-# Inicializar memória
 if "conduite_tests" not in st.session_state:
     st.session_state["conduite_tests"] = []
 
-# Nova forma de autenticar com OpenAI
 client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
 
-# Formulário do jogador
 st.markdown("### 👤 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
@@ -29,7 +25,6 @@ perte_controle = False
 if parcours == "Parcours avec Changements de Direction (3 virages, 12m)":
     perte_controle = st.radio("❌ Perte de contrôle de la balle ?", ["Non", "Oui"]) == "Oui"
 
-# Função para gerar análise com IA
 def generer_plan_ia(nom, age, parcours, temps, perte_controle):
     prompt = f"""
 Le joueur s'appelle {nom}, il a {age} ans.
@@ -37,26 +32,31 @@ Il a effectué le test suivant : {parcours}
 Temps réalisé : {temps} secondes.
 Perte de contrôle de la balle : {"Oui" if perte_controle else "Non"}
 
-Agis comme un entraîneur professionnel d'une académie de haut niveau. 
-Génère un plan d'action technique personnalisé en français avec :
-1. Un commentaire technique sur la performance
-2. 2 exercices recommandés (précis)
+Critères de performance pour le test :
+- 8 à 10 ans : Excellent < 8.5s, Bon < 10s, Régulier < 11.5s, Faible ≥ 11.5s
+- 11 à 13 ans : Excellent < 7.5s, Bon < 9s, Régulier < 10.5s, Faible ≥ 10.5s
+- 14 à 18 ans : Excellent < 6.5s, Bon < 8s, Régulier < 9.5s, Faible ≥ 9.5s
+
+Agis comme un entraîneur professionnel. Analyse objectivement la performance en fonction de ces critères. Si la performance est très faible, sois critique et propose un plan de correction.
+Inclue dans ta réponse :
+1. Un commentaire technique (1 ligne)
+2. 2 exercices recommandés
 3. Un plan de progression sur 7 jours
-4. Conseils techniques adaptés à son âge
-Réponds en 5 lignes maximum.
+4. Des conseils adaptés à son âge
+
+Réponds en 5 lignes professionnelles maximum.
 """
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=400,
+            max_tokens=500,
             temperature=0.7
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"❌ Erreur lors de l'appel à l'IA : {str(e)}"
 
-# Botão para adicionar teste
 if st.button("✅ Ajouter ce test avec analyse IA"):
     analyse = generer_plan_ia(nom, age, parcours, temps, perte_controle)
 
@@ -72,7 +72,6 @@ if st.button("✅ Ajouter ce test avec analyse IA"):
     st.success("✅ Test ajouté avec succès. Voir analyse ci-dessous 👇")
     st.markdown(f"### 📊 Analyse IA pour {nom}:\n\n{analyse}")
 
-# Exibir resultados
 if st.session_state["conduite_tests"]:
     st.markdown("### 📋 Résultats enregistrés")
     df = pd.DataFrame(st.session_state["conduite_tests"])
