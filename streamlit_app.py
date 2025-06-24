@@ -48,7 +48,7 @@ if st.button("✅ Sauvegarder le joueur"):
         "Masse musculaire (%)": masse_musculaire,
         "IMC": imc
     }
-    df = df.append(nouvelle_ligne, ignore_index=True)
+    df = pd.concat([df, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
     df.to_csv(fichier, index=True)
     st.success("✅ Joueur sauvegardé avec succès!")
 
