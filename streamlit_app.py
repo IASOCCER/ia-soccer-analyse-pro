@@ -125,3 +125,41 @@ if st.session_state["conduite_tests"]:
         mime="text/csv"
     )
 
+from fpdf import FPDF
+import base64
+import io
+
+def exporter_pdf(joueur):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.set_title(f"Analyse IA – {joueur['Nom']}")
+    pdf.cell(200, 10, txt="IA Soccer – Rapport Technique", ln=True, align='C')
+    pdf.ln(10)
+
+    pdf.cell(200, 10, txt=f"Nom: {joueur['Nom']}", ln=True)
+    pdf.cell(200, 10, txt=f"Âge: {joueur['Âge']} ans", ln=True)
+    pdf.cell(200, 10, txt=f"Parcours: {joueur['Parcours']}", ln=True)
+    pdf.cell(200, 10, txt=f"Temps (s): {joueur['Temps (s)']} secondes", ln=True)
+    pdf.cell(200, 10, txt=f"Niveau: {joueur['Niveau']}", ln=True)
+    pdf.cell(200, 10, txt=f"Perte de Contrôle: {joueur['Perte de Contrôle']}", ln=True)
+    pdf.ln(10)
+
+    pdf.multi_cell(0, 10, txt=f"📊 Analyse IA:\n{joueur['Analyse IA']}")
+    
+    pdf_output = io.BytesIO()
+    pdf.output(pdf_output)
+    pdf_output.seek(0)
+    b64_pdf = base64.b64encode(pdf_output.read()).decode('utf-8')
+
+    st.markdown(f"""
+        <a href="data:application/octet-stream;base64,{b64_pdf}" download="analyse_{joueur['Nom']}.pdf">
+            📄 Télécharger le rapport PDF pour {joueur['Nom']}
+        </a>
+    """, unsafe_allow_html=True)
+
+# Geração do PDF para o último teste
+if st.session_state["conduite_tests"]:
+    dernier_test = st.session_state["conduite_tests"][-1]
+    exporter_pdf(dernier_test)
