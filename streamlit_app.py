@@ -8,7 +8,35 @@ st.set_page_config(page_title="IA Soccer – Analyse de Conduite de Balle", layo
 st.title("⚽ IA Soccer – Analyse de la Conduite de Balle")
 
 # Authentification API OpenAI
-openai.api_key = st.secrets["openai"]["api_key"]
+from openai import OpenAI
+
+# Inicialização do cliente OpenAI com a chave secreta
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+
+def generer_analyse_ia(nom, age, parcours, temps, erreurs):
+    prompt = f"""
+Tu es un entraîneur professionnel de football. Voici les résultats d’un test de conduite de balle :
+
+- Nom du joueur : {nom}
+- Âge : {age}
+- Type de parcours : {parcours}
+- Temps total : {temps} secondes
+- Nombre de pertes de contrôle : {erreurs}
+
+Analyse le niveau du joueur selon les standards des académies professionnelles. Évalue la performance et donne un commentaire professionnel. Propose un plan de correction ou de progression en fonction des résultats. Sois clair, structuré et professionnel. Utilise un ton motivant et formateur.
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "Tu es un entraîneur de football professionnel chargé d'analyser la performance des jeunes joueurs."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5,
+        max_tokens=600
+    )
+
+    return response.choices[0].message.content
 
 # Mémoire de session
 if "conduite_tests" not in st.session_state:
