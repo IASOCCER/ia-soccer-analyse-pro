@@ -112,6 +112,14 @@ if st.button("✅ Ajouter ce test avec analyse IA"):
     st.success(f"✅ Test ajouté avec succès. Niveau évalué: {niveau}")
     st.markdown(f"### 📊 Analyse IA pour {nom}:\n\n{analyse}")
 
+# Exibir análise
+st.markdown(f"### 📊 Analyse IA pour {joueur['Nom']}:")
+st.markdown(joueur['Analyse IA'])
+
+# 🔽 Baixar PDF com os dados
+exporter_pdf(joueur)
+
+
 if st.session_state["conduite_tests"]:
     st.markdown("### 📋 Résultats enregistrés")
     df = pd.DataFrame(st.session_state["conduite_tests"])
