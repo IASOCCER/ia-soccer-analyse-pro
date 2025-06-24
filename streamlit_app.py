@@ -112,16 +112,6 @@ if st.button("✅ Ajouter ce test avec analyse IA"):
     st.success(f"✅ Test ajouté avec succès. Niveau évalué: {niveau}")
     st.markdown(f"### 📊 Analyse IA pour {nom}:\n\n{analyse}")
 
-# Exibir análise
-# Exibir análise do último teste
-st.markdown(f"### 📊 Analyse IA pour {dernier_test['Nom']}:")
-st.markdown(dernier_test["Analyse IA"])
-
-
-
-
-# 🔽 Baixar PDF com os dados
-exporter_pdf(joueur)
 
 
 if st.session_state["conduite_tests"]:
