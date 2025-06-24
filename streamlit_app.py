@@ -8,7 +8,7 @@ st.set_page_config(page_title="IA Soccer – Analyse de Conduite de Balle", layo
 st.title("⚽ IA Soccer – Analyse de la Conduite de Balle")
 
 # Authentification API OpenAI
-openai.api_key = st.secrets["api_key"]
+openai.api_key = st.secrets["openai"]["api_key"]
 
 # Mémoire de session
 if "conduite_tests" not in st.session_state:
