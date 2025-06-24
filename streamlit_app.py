@@ -2,49 +2,87 @@ import streamlit as st
 import pandas as pd
 import openai
 
-st.set_page_config(page_title="IA Soccer – Conduite de Balle avec IA", layout="wide")
-st.title("🚀 IA Soccer – Analyse de Conduite de Balle (avec Intelligence Artificielle)")
+st.set_page_config(page_title="IA Soccer – Conduite Pro", layout="wide")
+st.title("🚀 IA Soccer – Analyse Technique avec Références Professionnelles")
 
 if "conduite_tests" not in st.session_state:
     st.session_state["conduite_tests"] = []
 
 client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
 
+# Referências para Zig-Zag (6 cônes, 15m)
+zigzag_ref = {
+    8: 11.5, 9: 11.0, 10: 10.5, 11: 10.0, 12: 9.6, 13: 9.2,
+    14: 8.9, 15: 8.6, 16: 8.4, 17: 8.2, 18: 8.0
+}
+
+# Referências para Changement de Direction (3 virages, 12m)
+change_ref = {
+    8: {"moyen": 16, "excellent": 14, "faible": 20},
+    9: {"moyen": 15, "excellent": 13, "faible": 19},
+    10: {"moyen": 14, "excellent": 12, "faible": 18},
+    11: {"moyen": 13, "excellent": 11, "faible": 17},
+    12: {"moyen": 12, "excellent": 10, "faible": 16},
+    13: {"moyen": 11, "excellent": 9, "faible": 15},
+    14: {"moyen": 10.5, "excellent": 8.5, "faible": 14.5},
+    15: {"moyen": 10, "excellent": 8, "faible": 14},
+    16: {"moyen": 9.5, "excellent": 7.5, "faible": 13.5},
+    17: {"moyen": 9, "excellent": 7, "faible": 13},
+    18: {"moyen": 9, "excellent": 7, "faible": 13}
+}
+
 st.markdown("### 👤 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
 
-st.markdown("### 🛣️ Détails du test de conduite de balle")
+st.markdown("### 🛣️ Détails du test")
 parcours = st.selectbox("Type de parcours", [
     "Parcours Zig-Zag (6 cônes, 15m au total)",
     "Parcours avec Changements de Direction (3 virages, 12m)"
 ])
 temps = st.number_input("⏱️ Temps (en secondes)", min_value=0.0, step=0.1)
-
 perte_controle = False
-if parcours == "Parcours avec Changements de Direction (3 virages, 12m)":
+if parcours.startswith("Parcours avec Changements"):
     perte_controle = st.radio("❌ Perte de contrôle de la balle ?", ["Non", "Oui"]) == "Oui"
 
-def generer_plan_ia(nom, age, parcours, temps, perte_controle):
+def analyser_niveau(age, temps, parcours):
+    if parcours.startswith("Parcours Zig-Zag"):
+        ref = zigzag_ref.get(age, 10.0)
+        if temps <= ref - 1.0:
+            return "Excellent"
+        elif temps <= ref + 1.0:
+            return "Bon"
+        elif temps <= ref + 3.0:
+            return "Régulier"
+        else:
+            return "Faible"
+    else:
+        ref = change_ref.get(age, {"moyen": 12, "excellent": 10, "faible": 16})
+        if temps <= ref["excellent"]:
+            return "Excellent"
+        elif temps >= ref["faible"]:
+            return "Faible"
+        elif temps <= ref["moyen"]:
+            return "Bon"
+        else:
+            return "Régulier"
+
+def generer_plan_ia(nom, age, parcours, temps, perte_controle, niveau):
     prompt = f"""
-Le joueur s'appelle {nom}, il a {age} ans.
-Il a effectué le test suivant : {parcours}
-Temps réalisé : {temps} secondes.
-Perte de contrôle de la balle : {"Oui" if perte_controle else "Non"}
+Le joueur s'appelle {nom}, {age} ans.
+Exercice : {parcours}
+Temps : {temps} s — Niveau évalué : {niveau}
+Perte de contrôle : {"Oui" if perte_controle else "Non"}
 
-Critères de performance pour le test :
-- 8 à 10 ans : Excellent < 8.5s, Bon < 10s, Régulier < 11.5s, Faible ≥ 11.5s
-- 11 à 13 ans : Excellent < 7.5s, Bon < 9s, Régulier < 10.5s, Faible ≥ 10.5s
-- 14 à 18 ans : Excellent < 6.5s, Bon < 8s, Régulier < 9.5s, Faible ≥ 9.5s
+Agis comme un entraîneur de haut niveau.
+Crée un plan d'action personnalisé selon le niveau, l'âge et le type de parcours.
+Inclue :
+- Un commentaire technique
+- 2 exercices recommandés
+- Plan sur 7 jours
+- Conseils d'amélioration
 
-Agis comme un entraîneur professionnel. Analyse objectivement la performance en fonction de ces critères. Si la performance est très faible, sois critique et propose un plan de correction.
-Inclue dans ta réponse :
-1. Un commentaire technique (1 ligne)
-2. 2 exercices recommandés
-3. Un plan de progression sur 7 jours
-4. Des conseils adaptés à son âge
-
-Réponds en 5 lignes professionnelles maximum.
+Réponds en 5 lignes maximum.
 """
     try:
         response = client.chat.completions.create(
@@ -58,7 +96,8 @@ Réponds en 5 lignes professionnelles maximum.
         return f"❌ Erreur lors de l'appel à l'IA : {str(e)}"
 
 if st.button("✅ Ajouter ce test avec analyse IA"):
-    analyse = generer_plan_ia(nom, age, parcours, temps, perte_controle)
+    niveau = analyser_niveau(age, temps, parcours)
+    analyse = generer_plan_ia(nom, age, parcours, temps, perte_controle, niveau)
 
     st.session_state["conduite_tests"].append({
         "Nom": nom,
@@ -66,10 +105,11 @@ if st.button("✅ Ajouter ce test avec analyse IA"):
         "Parcours": parcours,
         "Temps (s)": temps,
         "Perte de Contrôle": "Oui" if perte_controle else "Non",
+        "Niveau": niveau,
         "Analyse IA": analyse
     })
 
-    st.success("✅ Test ajouté avec succès. Voir analyse ci-dessous 👇")
+    st.success(f"✅ Test ajouté avec succès. Niveau évalué: {niveau}")
     st.markdown(f"### 📊 Analyse IA pour {nom}:\n\n{analyse}")
 
 if st.session_state["conduite_tests"]:
@@ -84,39 +124,4 @@ if st.session_state["conduite_tests"]:
         file_name="analyse_conduite_ia_soccer.csv",
         mime="text/csv"
     )
-from fpdf import FPDF
-import base64
-import io
 
-def exporter_pdf(joueur):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-
-    pdf.set_title(f"Analyse IA – {joueur['Nom']}")
-    pdf.cell(200, 10, txt=f"IA Soccer – Rapport Technique", ln=True, align='C')
-    pdf.ln(10)
-
-    pdf.cell(200, 10, txt=f"Nom: {joueur['Nom']}", ln=True)
-    pdf.cell(200, 10, txt=f"Âge: {joueur['Âge']} ans", ln=True)
-    pdf.cell(200, 10, txt=f"Parcours: {joueur['Parcours']}", ln=True)
-    pdf.cell(200, 10, txt=f"Temps (s): {joueur['Temps (s)']} secondes", ln=True)
-    pdf.cell(200, 10, txt=f"Perte de Contrôle: {joueur['Perte de Contrôle']}", ln=True)
-    pdf.ln(10)
-    pdf.multi_cell(0, 10, txt=f"📊 Analyse IA:\n{joueur['Analyse IA']}")
-    
-    pdf_output = io.BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-    b64_pdf = base64.b64encode(pdf_output.read()).decode('utf-8')
-
-    st.markdown(f"""
-        <a href="data:application/octet-stream;base64,{b64_pdf}" download="analyse_{joueur['Nom']}.pdf">
-            📄 Télécharger le rapport PDF pour {joueur['Nom']}
-        </a>
-    """, unsafe_allow_html=True)
-
-# Botão de exportação para o último jogador analisado
-if st.session_state["conduite_tests"]:
-    dernier_test = st.session_state["conduite_tests"][-1]
-    exporter_pdf(dernier_test)
