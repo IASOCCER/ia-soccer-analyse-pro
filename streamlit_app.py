@@ -10,6 +10,32 @@ if "conduite_tests" not in st.session_state:
 
 client = openai.OpenAI(api_key=st.secrets["openai"]["api_key"])
 
+from fpdf import FPDF
+
+def exporter_pdf(test):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.set_text_color(0, 0, 128)
+    pdf.cell(200, 10, txt="IA Soccer – Rapport de Test Technique", ln=True, align="C")
+    pdf.ln(10)
+
+    pdf.set_text_color(0, 0, 0)
+    for clé, valeur in test.items():
+        pdf.cell(200, 10, txt=f"{clé} : {valeur}", ln=True)
+
+    pdf_output = "rapport_test_joueur.pdf"
+    pdf.output(pdf_output)
+
+    with open(pdf_output, "rb") as f:
+        st.download_button(
+            label="📄 Télécharger le PDF",
+            data=f,
+            file_name=pdf_output,
+            mime="application/pdf"
+        )
+
 # Referências para Zig-Zag (6 cônes, 15m)
 zigzag_ref = {
     8: 11.5, 9: 11.0, 10: 10.5, 11: 10.0, 12: 9.6, 13: 9.2,
