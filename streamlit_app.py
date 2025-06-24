@@ -18,15 +18,19 @@ pression = st.selectbox("Niveau de pression", ["Faible (12s)", "Moyenne (6s)", "
 nb_acertes = st.slider("Nombre de passes réussies sur 6", 0, 6, 3)
 
 temps_reactions = []
-st.markdown("Saisir les temps de réaction (en secondes) pour chaque passe réussie :")
-for i in range(1, nb_acertes + 1):
-    t = st.number_input(f"Temps pour la passe {i}", min_value=0.0, max_value=15.0, step=0.1, key=f"passe_{i}")
-    temps_reactions.append(t)
+if nb_acertes > 0:
+    st.markdown("Saisir les temps de réaction (en secondes) pour chaque passe réussie :")
+    for i in range(1, nb_acertes + 1):
+        t = st.number_input(f"Temps pour la passe {i}", min_value=0.0, max_value=15.0, step=0.1, key=f"passe_{i}")
+        temps_reactions.append(t)
 
 if st.button("➕ Ajouter ce test"):
-    if nom and age and temps_reactions:
+    if nom and age:
         precision = round((nb_acertes / 6) * 100, 1)
-        temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2) if temps_reactions else 0.0
+        if nb_acertes == 0:
+            temps_moyen = 0.0
+        else:
+            temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2)
 
         st.session_state["tests"].append({
             "Nom": nom,
