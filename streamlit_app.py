@@ -150,8 +150,4 @@ if st.session_state["conduite_tests"]:
         file_name="analyse_conduite_ia_soccer.csv",
         mime="text/csv"
     )
- # PDF du dernier test
-    dernier_test = st.session_state["conduite_tests"][-1]
 
-    if st.button("📄 Exporter le dernier test en PDF"):
-        exporter_pdf(dernier_test)
