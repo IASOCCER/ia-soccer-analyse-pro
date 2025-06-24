@@ -1,68 +1,88 @@
 
 import streamlit as st
-import pandas as pd
-import os
 
-st.set_page_config(page_title="IA Soccer Analyse Pro", layout="wide")
-st.title("IA Soccer Analyse Pro – Évaluation complète")
+st.set_page_config(page_title="IA Soccer Analyse Pro Web", layout="wide")
+st.title("IA Soccer Analyse Pro Web")
 
-# Chargement des données précédentes
-fichier = "joueurs.csv"
-if os.path.exists(fichier):
-    df = pd.read_csv(fichier)
-else:
-    df = pd.DataFrame(columns=[
-        "Nom", "Âge", "Temps de passe (s)", "Précision passe (%)",
-        "Vitesse tir (km/h)", "Précision tir (%)", "Taille (cm)",
-        "Poids (kg)", "Masse musculaire (%)", "IMC"
-    ])
+st.markdown("## Avaliação Técnica do Jogador")
+nome = st.text_input("Nome do jogador")
+idade = st.number_input("Idade", min_value=8, max_value=18)
 
-st.markdown("### ➕ Ajouter un joueur")
+tempo_passe = st.number_input("Tempo médio de passe (s)")
+precisao_passe = st.slider("Precisão do passe (%)", 0, 100, 94)
 
-nom = st.text_input("Nom du joueur")
-age = st.number_input("Âge", min_value=8, max_value=18)
-
-# Évaluation technique
-temps_passe = st.number_input("Temps moyen de passe (en secondes)", value=3.0)
-precision_passe = st.slider("Précision du passe (%)", 0, 100, 90)
-vitesse_tir = st.number_input("Vitesse du tir (km/h)", value=65.0)
-precision_tir = st.slider("Précision du tir (%)", 0, 100, 60)
-
-# Évaluation biométrique
-taille = st.number_input("Taille (en cm)", value=140)
-poids = st.number_input("Poids (en kg)", value=40)
-masse_musculaire = st.slider("Masse musculaire estimée (%)", 0, 100, 45)
-taille_m = taille / 100
-imc = round(poids / (taille_m ** 2), 1)
-
-if st.button("✅ Sauvegarder le joueur"):
-    nouvelle_ligne = {
-        "Nom": nom,
-        "Âge": age,
-        "Temps de passe (s)": temps_passe,
-        "Précision passe (%)": precision_passe,
-        "Vitesse tir (km/h)": vitesse_tir,
-        "Précision tir (%)": precision_tir,
-        "Taille (cm)": taille,
-        "Poids (kg)": poids,
-        "Masse musculaire (%)": masse_musculaire,
-        "IMC": imc
-    }
-    df = pd.concat([df, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
-    df.to_csv(fichier, index=True)
-    st.success("✅ Joueur sauvegardé avec succès!")
+velocidade_remate = st.number_input("Velocidade do remate (km/h)", value=67.0)
+acerto_remate = st.slider("Precisão do remate (%)", 0, 100, 60)
 
 st.markdown("---")
-st.markdown("### 📋 Liste des joueurs enregistrés")
+st.markdown("## Avaliação Biométrica")
 
-if not df.empty:
-    st.dataframe(df)
+altura = st.number_input("Altura (cm)", min_value=100, max_value=220, value=140)
+peso = st.number_input("Peso (kg)", min_value=20, max_value=150, value=40)
+massa_muscular = st.slider("Massa muscular estimada (%)", 0, 100, 45)
 
-    st.download_button(
-        label="📥 Télécharger en CSV",
-        data=df.to_csv(index=False).encode('utf-8'),
-        file_name='joueurs_iasoccer.csv',
-        mime='text/csv'
-    )
-else:
-    st.info("Aucun joueur enregistré pour le moment.")
+# Cálculo de IMC
+altura_m = altura / 100
+imc = round(peso / (altura_m ** 2), 1)
+
+if st.button("Gerar Relatório Completo"):
+    st.success("Relatório gerado com sucesso!")
+
+    st.markdown(f'''
+**Jogador:** {nome}  
+**Idade:** {idade} anos  
+
+### 🟦 Dados Técnicos
+- Tempo médio de passe: {tempo_passe} s  
+- Precisão do passe: {precisao_passe}%  
+- Velocidade do remate: {velocidade_remate} km/h  
+- Precisão do remate: {acerto_remate}%
+
+### 🟩 Análise Técnica Automática
+''')
+
+    if tempo_passe > 2.5:
+        st.markdown("- **Passe:** ⚠️ Acima do ideal. Treinar reação sob pressão.")
+    else:
+        st.markdown("- **Passe:** ✅ Dentro do ideal.")
+
+    if precisao_passe >= 85:
+        st.markdown("- **Precisão:** ✅ Excelente.")
+    else:
+        st.markdown("- **Precisão:** ⚠️ Pode melhorar consistência.")
+
+    if velocidade_remate >= 55:
+        st.markdown("- **Remate:** ✅ Potente.")
+    else:
+        st.markdown("- **Remate:** ⚠️ Potência abaixo da média.")
+
+    if acerto_remate >= 70:
+        st.markdown("- **Finalização:** ✅ Boa direção.")
+    else:
+        st.markdown("- **Finalização:** ⚠️ Melhorar controle e pontaria.")
+
+    st.markdown(f'''
+### 🟨 Dados Biométricos
+- Altura: {altura} cm  
+- Peso: {peso} kg  
+- Massa muscular: {massa_muscular}%  
+- **IMC:** {imc}
+
+### 🟥 Análise Física Automática
+''')
+
+    if imc < 14:
+        st.markdown("- **IMC:** ⚠️ Muito abaixo do ideal — acompanhar crescimento.")
+    elif 14 <= imc < 18:
+        st.markdown("- **IMC:** ✅ Dentro da média saudável para a idade.")
+    elif 18 <= imc < 21:
+        st.markdown("- **IMC:** 🔎 Ligeiramente elevado — manter acompanhamento.")
+    else:
+        st.markdown("- **IMC:** ⚠️ Acima do ideal — atenção com alimentação e treino físico.")
+
+    if massa_muscular < 40:
+        st.markdown("- **Massa muscular:** ⚠️ Baixa — foco em treino físico funcional.")
+    elif 40 <= massa_muscular < 60:
+        st.markdown("- **Massa muscular:** ✅ Boa para a idade.")
+    else:
+        st.markdown("- **Massa muscular:** 🔝 Excelente desenvolvimento físico.")
