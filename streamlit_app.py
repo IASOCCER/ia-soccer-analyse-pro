@@ -1,10 +1,20 @@
 import streamlit as st
 import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 st.set_page_config(page_title="Analyse de Passe – IA Soccer", layout="wide")
 st.title("🧠 IA Soccer – Analyse du Passe avec IA")
 
-# Initialisation de la mémoire
+# Conexão com Google Sheets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+client = gspread.authorize(creds)
+
+# Abrir a planilha pelo ID
+sheet = client.open_by_key("1dqnkAFAFjbBpGJa37NrDdNfm8NYNrfWdaF5NDBsCgwg").sheet1
+
+# Inicialização da memória
 if "tests" not in st.session_state:
     st.session_state["tests"] = []
 
@@ -32,97 +42,30 @@ if st.button("➕ Ajouter ce test"):
         else:
             temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2)
 
-        st.session_state["tests"].append({
+        # Adicionar ao estado
+        novo_teste = {
             "Nom": nom,
             "Âge": age,
             "Pied": pied,
             "Pression": pression,
             "Précision (%)": precision,
             "Temps moyen (s)": temps_moyen
-        })
-        st.success("✅ Test ajouté avec succès!")
+        }
+
+        st.session_state["tests"].append(novo_teste)
+
+        # Salvar na planilha Google
+        sheet.append_row(list(novo_teste.values()))
+
+        st.success("✅ Test ajouté avec succès et sauvegardé dans Google Sheets!")
     else:
         st.warning("Veuillez remplir toutes les informations pour ajouter le test.")
 
-# Afficher les tests ajoutés
+# Mostrar os dados locais
 if st.session_state["tests"]:
-    st.markdown("### 📊 Tests enregistrés")
+    st.markdown("### 📊 Tests enregistrés (session actuelle)")
     df = pd.DataFrame(st.session_state["tests"])
     st.dataframe(df, use_container_width=True)
-
-    if st.button("📄 Générer le rapport final"):
-        st.markdown(f"### 📌 Rapport final pour {nom}, {age} ans")
-
-        for pied_type in ["Pied gauche", "Pied droit"]:
-            sous_df = df[df["Pied"] == pied_type]
-            if not sous_df.empty:
-                st.markdown(f"#### 🦶 {pied_type}")
-                st.dataframe(sous_df[["Pression", "Précision (%)", "Temps moyen (s)"]])
-
-                precision_moy = sous_df["Précision (%)"].mean()
-                temps_moy = sous_df["Temps moyen (s)"].mean()
-
-                st.markdown(f"- **Précision moyenne :** {precision_moy:.1f}%")
-                st.markdown(f"- **Temps moyen de réaction :** {temps_moy:.2f} s")
-
-                # 🔍 Analyse
-                st.markdown("### 🧠 Analyse automatique")
-                if precision_moy >= 70:
-                    st.markdown("- ✅ **Précision élevée** – bon contrôle.")
-                elif 50 <= precision_moy < 70:
-                    st.markdown("- ⚠️ **Précision moyenne** – amélioration possible.")
-                else:
-                    st.markdown("- ❌ **Faible précision** – travailler la régularité et la concentration.")
-
-                if temps_moy < 4:
-                    st.markdown("- ✅ **Réaction rapide** – excellente lecture du stimulus.")
-                elif 4 <= temps_moy <= 6:
-                    st.markdown("- ⚠️ **Réaction modérée** – à améliorer.")
-                else:
-                    st.markdown("- ❌ **Réaction lente** – s'entraîner sous pression réelle.")
-
-                st.markdown("### 🎯 Plan d'action recommandé")
-
-                if precision_moy < 60 or temps_moy > 6:
-                    st.markdown("""
-#### 🟥 Niveau Prioritaire – Amélioration urgente
-
-**Objectif :** Améliorer la précision du passe sous pression et la prise de décision rapide.  
-**Exercices :**
-- Passe courte avec cible visuelle (Blazepod ou plots)
-- Enchaînement contrôle-passe en triangle
-- Jeu à 1 touche dans un espace réduit
-- Scanning visuel avant l'exécution
-
-**Fréquence :** 3 fois par semaine pendant 4 semaines  
-**Objectif :** Atteindre 70% de précision en pression moyenne
-                    """)
-                elif 60 <= precision_moy < 70 or 4 <= temps_moy <= 6:
-                    st.markdown("""
-#### 🟨 Niveau Modéré – Consolider les acquis
-
-**Objectif :** Stabiliser la régularité du passe sous pression modérée.  
-**Exercices :**
-- Passe à 2 touches avec changement d'appui
-- Variation de surfaces de passe
-- Travail après course courte (effort + précision)
-
-**Fréquence :** 2 fois par semaine pendant 3 semaines  
-**Objectif :** Maintenir au-dessus de 70% en situation réelle
-                    """)
-                else:
-                    st.markdown("""
-#### 🟩 Niveau Avancé – Maintien et transfert
-
-**Objectif :** Intégrer la qualité de passe dans le jeu réel.  
-**Exercices :**
-- Jeu réduit avec 1 touche
-- Passe en 3e homme
-- Analyse vidéo de prise d'information
-
-**Fréquence :** 1 session spécifique/semaine  
-**Objectif :** Transfert vers les matchs
-                    """)
 
 
 
