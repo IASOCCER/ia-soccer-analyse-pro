@@ -3,6 +3,8 @@ import pandas as pd
 
 st.set_page_config(page_title="IA Soccer Analyse Pro", layout="wide")
 st.title("⚽ IA Soccer – Analyse Technique")
+# Forcer la sidebar à s'afficher
+st.sidebar.markdown("## 📋 Menu d’analyse")
 
 # Menu latéral
 test_selection = st.sidebar.selectbox(
