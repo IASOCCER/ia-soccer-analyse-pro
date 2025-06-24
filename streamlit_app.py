@@ -2,84 +2,98 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(page_title="IA Soccer – Analyse de Passe", layout="wide")
-st.title("🎯 IA Soccer – Analyse de Passe")
+st.title("🎯 IA Soccer – Analyse de Passe – Série Complète")
 
 # Initialisation
-if "passe_tests" not in st.session_state:
-    st.session_state["passe_tests"] = []
+if "passe_series" not in st.session_state:
+    st.session_state["passe_series"] = []
+if "passe_temp" not in st.session_state:
+    st.session_state["passe_temp"] = []
 
-# 🔍 Fonction IA – Évaluation + Plan d'action professionnel
-def evaluer_passe(age, precision, pression):
+# 🔍 IA – Analyse finale
+def analyse_serie(passes, age, pression):
+    total = len(passes)
+    reussis = sum(1 for p in passes if p["Réussi"] == "Oui")
+    precision = (reussis / total) * 100
+    temps_moyen = sum(p["Temps (s)"] for p in passes) / total
+
     plan = []
 
-    # Bloc 1 : Précision
     if precision >= 80:
         note = "Excellent"
-        plan.append("🟢 Maintenir la régularité avec des passes sous pression en mouvement.")
-        plan.append("🔁 Introduire des passes avec changements de direction rapides.")
+        plan.append("🟢 Passes précises, maintenir la constance sous pression.")
     elif precision >= 50:
         note = "Moyen"
-        plan.append("🟠 Améliorer la précision avec des séries de 10 passes fixes sur cible.")
-        plan.append("👣 Corriger l'appui du pied non-dominant.")
+        plan.append("🟠 Travailler la stabilité du geste et la vitesse d'exécution.")
     else:
         note = "À améliorer"
-        plan.append("🔴 Répéter des passes à courte distance avec corrections vidéo.")
-        plan.append("👀 Travailler la posture et la prise d'information avant le geste.")
+        plan.append("🔴 Répétitions ciblées sur des passes simples avec corrections vidéo.")
 
-    # Bloc 2 : Pression
     if pression == 3:
-        plan.append("🔥 Simuler des passes en situation de match à haute intensité (jeu réduit 3v3).")
+        plan.append("🔥 Réagir rapidement à des stimuli visuels dans des jeux réduits (3v3).")
     elif pression == 6:
-        plan.append("💨 Répéter des passes avec adversaire fictif (pression moyenne, 2 secondes).")
+        plan.append("💨 Travailler en binôme avec pression simulée (2 secondes max).")
     else:
-        plan.append("🧊 Travailler la concentration et la technique sans contrainte de temps.")
+        plan.append("🧊 Stabiliser la technique sans contrainte de temps.")
 
-    # Bloc 3 : Âge
     if age < 12:
-        plan.append("🎯 Jeux ludiques avec Blazepods pour stimuler les réflexes.")
+        plan.append("🎯 Jeux avec Blazepod pour améliorer les réflexes.")
     else:
-        plan.append("🧠 Ajouter la prise de décision: passer ou conduire selon la situation.")
+        plan.append("🧠 Ajouter la prise de décision dans le choix du type de passe.")
 
-    return note, " • ".join(plan)
+    return precision, temps_moyen, note, " • ".join(plan)
 
 # 👤 Informations du joueur
 st.markdown("### 👤 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
-pied = st.selectbox("Pied utilisé", ["Droit", "Gauche"])
-pression = st.selectbox("Pression", ["Sans pression (12s)", "Pression moyenne (6s)", "Haute pression (3s)"])
+pression = st.selectbox("Niveau de pression", ["Sans pression (12s)", "Pression moyenne (6s)", "Haute pression (3s)"])
 pression_val = {"Sans pression (12s)": 12, "Pression moyenne (6s)": 6, "Haute pression (3s)": 3}[pression]
 
-# 🎯 Résultats du test
-st.markdown("### 🎯 Résultats du test")
-cibles_total = 6
-cibles_reussies = st.number_input("Cibles touchées (sur 6)", min_value=0, max_value=6, step=1)
+# ➕ Ajouter un passe
+st.markdown("### ➕ Ajouter chaque passe")
+cible = st.selectbox("Cible visée", [1, 2, 3, 4, 5, 6])
+temps = st.number_input("Temps de réaction (en secondes)", min_value=0.0, step=0.01)
+reussi = st.radio("Passe réussie ?", ["Oui", "Non"])
 
-# ➕ Ajouter le test
-if st.button("➕ Ajouter ce test"):
-    if nom:
-        precision = (cibles_reussies / cibles_total) * 100
-        note, plan = evaluer_passe(age, precision, pression_val)
-        st.session_state["passe_tests"].append({
+if st.button("Ajouter ce passe"):
+    st.session_state["passe_temp"].append({
+        "Cible": cible,
+        "Temps (s)": temps,
+        "Réussi": reussi
+    })
+
+# 📋 Tableau temporaire
+if st.session_state["passe_temp"]:
+    st.markdown("### 📌 Passes enregistrées")
+    st.dataframe(pd.DataFrame(st.session_state["passe_temp"]), use_container_width=True)
+
+# ✅ Finaliser la série
+if st.button("✅ Finaliser la série"):
+    if nom and len(st.session_state["passe_temp"]) == 6:
+        precision, temps_moyen, note, plan = analyse_serie(
+            st.session_state["passe_temp"], age, pression_val
+        )
+        st.session_state["passe_series"].append({
             "Nom": nom,
             "Âge": age,
-            "Pied": pied,
             "Pression": pression,
-            "Cibles réussies": cibles_reussies,
             "Précision (%)": round(precision, 1),
+            "Temps moyen (s)": round(temps_moyen, 2),
             "Note": note,
-            "Plan d'action professionnel": plan
+            "Plan d'action": plan
         })
+        st.session_state["passe_temp"] = []
     else:
-        st.warning("Veuillez entrer le nom du joueur.")
+        st.warning("Veuillez entrer un nom et enregistrer exactement 6 passes.")
 
-# 📊 Résultats enregistrés
-if st.session_state["passe_tests"]:
-    st.markdown("### 📊 Résultats enregistrés")
-    df = pd.DataFrame(st.session_state["passe_tests"])
+# 📊 Résultats finaux
+if st.session_state["passe_series"]:
+    st.markdown("### 📊 Séries de passe complètes")
+    df = pd.DataFrame(st.session_state["passe_series"])
     st.dataframe(df, use_container_width=True)
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Télécharger (.csv)", csv, "passe_tests.csv", "text/csv")
+    st.download_button("📥 Télécharger (.csv)", csv, "series_passe.csv", "text/csv")
 
 
 
