@@ -1,92 +1,94 @@
 import streamlit as st
 import pandas as pd
+import openai
 
-st.set_page_config(page_title="IA Soccer – Conduite de Balle", layout="wide")
-st.title("⚡ IA Soccer – Analyse de la Conduite de Balle")
+# Configurar layout da página
+st.set_page_config(page_title="IA Soccer – Conduite de Balle avec IA", layout="wide")
+st.title("🚀 IA Soccer – Analyse de Conduite de Balle (avec Intelligence Artificielle)")
 
-# Initialisation
+# Inicializar memória local
 if "conduite_tests" not in st.session_state:
     st.session_state["conduite_tests"] = []
 
-# 🔍 Fonction IA – Analyse et plan d'action
-def evaluer_conduite(type_parcours, age, temps):
-    if type_parcours == "Zig-Zag":
-        ref = 8.0 if age <= 12 else 7.0
-    else:
-        ref = 9.5 if age <= 12 else 8.5
+# Ler a chave da API
+openai.api_key = st.secrets["openai"]["api_key"]
 
-    diff = temps - ref
-
-    if diff <= -1:
-        note = "🟩 Avancé"
-        plan = """
-**Objectif :** Transférer la vitesse de conduite vers des situations de match.  
-**Exercices :**
-- Conduite avec opposition passive
-- Enchaînement conduite + passe rapide
-- Vidéo feedback sur posture
-        """
-    elif -1 < diff <= 1:
-        note = "🟨 Correct"
-        plan = """
-**Objectif :** Gagner en fluidité et coordination.  
-**Exercices :**
-- Slalom chronométré (3 séries)
-- Changement de rythme à mi-parcours
-- Travail de prise d'information visuelle
-        """
-    else:
-        note = "🟥 À améliorer"
-        plan = """
-**Objectif :** Maîtriser le ballon en pleine vitesse.  
-**Exercices :**
-- Conduite à faible vitesse avec contrôle du regard
-- Parcours avec plots rapprochés (1,5m)
-- Reprise technique avec vidéo (2x/sem)
-        """
-    return note, plan.strip()
-
-# 🧑 Informations
+# Formulário do jogador
 st.markdown("### 👤 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
 
-st.markdown("### 🛣️ Type de parcours")
-type_parcours = st.selectbox("Sélectionner le type", ["Zig-Zag (6 cônes – 2,5m)", "Changement de direction (4 virages)"])
-type_parcours_simple = "Zig-Zag" if "Zig-Zag" in type_parcours else "Changement"
+# Tipo de exercício
+st.markdown("### 🛣️ Détails du test de conduite de balle")
+parcours = st.selectbox("Type de parcours", [
+    "Parcours Zig-Zag (6 cônes, 15m au total)",
+    "Parcours avec Changements de Direction (3 virages, 12m)"
+])
 
-st.markdown("### ⏱️ Temps total")
-temps = st.number_input("Temps réalisé (en secondes)", min_value=0.0, step=0.01)
+temps = st.number_input("⏱️ Temps (en secondes)", min_value=0.0, step=0.1)
 
-# ➕ Ajouter
-if st.button("➕ Ajouter ce test"):
-    if nom and temps > 0:
-        note, plan = evaluer_conduite(type_parcours_simple, age, temps)
-        st.session_state["conduite_tests"].append({
-            "Nom": nom,
-            "Âge": age,
-            "Type": type_parcours_simple,
-            "Temps (s)": temps,
-            "Évaluation": note,
-            "Plan d'action": plan
-        })
-        st.success("✅ Test ajouté avec succès.")
-    else:
-        st.warning("Veuillez remplir tous les champs.")
+perte_controle = False
+if parcours == "Parcours avec Changements de Direction (3 virages, 12m)":
+    perte_controle = st.radio("❌ Perte de contrôle de la balle ?", ["Non", "Oui"]) == "Oui"
 
-# 📊 Affichage
+# Função IA – gerar plano de ação
+def generer_plan_ia(nom, age, parcours, temps, perte_controle):
+    prompt = f"""
+Le joueur s'appelle {nom}, il a {age} ans.
+Il a effectué le test suivant : {parcours}
+Temps réalisé : {temps} secondes.
+Perte de contrôle de la balle : {"Oui" if perte_controle else "Non"}
+
+Agis comme un entraîneur professionnel d'une académie de haut niveau. 
+Génère un plan d'action technique personnalisé en français avec :
+1. Un commentaire technique sur la performance
+2. 2 exercices recommandés (précis)
+3. Un plan de progression sur 7 jours
+4. Conseils techniques adaptés à son âge
+Réponds en 5 lignes maximum.
+"""
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=400,
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"❌ Erreur lors de l'appel à l'IA : {str(e)}"
+
+# Botão para processar o teste
+if st.button("✅ Ajouter ce test avec analyse IA"):
+    analyse = generer_plan_ia(nom, age, parcours, temps, perte_controle)
+
+    st.session_state["conduite_tests"].append({
+        "Nom": nom,
+        "Âge": age,
+        "Parcours": parcours,
+        "Temps (s)": temps,
+        "Perte de Contrôle": "Oui" if perte_controle else "Non",
+        "Analyse IA": analyse
+    })
+
+    st.success("✅ Test ajouté avec succès. Voir analyse ci-dessous 👇")
+    st.markdown(f"### 📊 Analyse IA pour {nom}:\n\n{analyse}")
+
+# Mostrar tabela de resultados
 if st.session_state["conduite_tests"]:
-    st.markdown("### 📊 Résultats enregistrés")
+    st.markdown("### 📋 Résultats enregistrés")
     df = pd.DataFrame(st.session_state["conduite_tests"])
-    st.dataframe(df[["Nom", "Âge", "Type", "Temps (s)", "Évaluation"]], use_container_width=True)
+    st.dataframe(df, use_container_width=True)
 
-    if st.button("📄 Générer le rapport complet"):
-        for entry in st.session_state["conduite_tests"]:
-            st.markdown(f"---\n### 🧠 Rapport – {entry['Nom']} ({entry['Âge']} ans) – {entry['Type']}")
-            st.markdown(f"- **Temps :** {entry['Temps (s)']} s")
-            st.markdown(f"- **Évaluation :** {entry['Évaluation']}")
-            st.markdown("### 🎯 Plan d'action recommandé")
-            st.markdown(entry["Plan d'action"])
+    # Exportar CSV
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="📥 Télécharger les résultats (.csv)",
+        data=csv,
+        file_name="analyse_conduite_ia_soccer.csv",
+        mime="text/csv"
+    )
+
 
 
 
