@@ -9,7 +9,7 @@ creds_dict = st.secrets["google_service_account"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 spreadsheet = client.open("IA Soccer - Données Techniques")
-worksheet = spreadsheet.sheet1
+worksheet = spreadsheet.worksheet("Passe")
 
 # --- Configuração da página ---
 st.set_page_config(page_title="Analyse de Passe – IA Soccer", layout="wide")
