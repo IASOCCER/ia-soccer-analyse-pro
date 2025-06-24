@@ -1,110 +1,74 @@
 import streamlit as st
 import pandas as pd
-import gspread
+import json
 from oauth2client.service_account import ServiceAccountCredentials
+import gspread
+from datetime import datetime
 
-# --- Autenticação com Google Sheets ---
+# --- Correção da chave privada ---
+key_data = st.secrets["google_service_account"]
+key_data["private_key"] = key_data["private_key"].replace("\\n", "\n")
+
+# --- Inicializa credenciais ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds_dict = st.secrets["google_service_account"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(key_data, scope)
 client = gspread.authorize(creds)
-spreadsheet = client.open("IA Soccer - Données Techniques")
-worksheet = spreadsheet.worksheet("Passe")
 
-# --- Configuração da página ---
-st.set_page_config(page_title="Analyse de Passe – IA Soccer", layout="wide")
-st.title("⚽ IA Soccer – Analyse du Passe avec IA")
+# --- Acesso à planilha e worksheet ---
+sheet = client.open("IA Soccer Analyse Pro")  # nome da planilha no Google Sheets
+worksheet = sheet.worksheet("Feuille 1")  # nome da aba
 
-# --- Inicialização da memória ---
+# --- Sessão do Streamlit ---
+st.title("IA Soccer Analyse Pro - Teste de Passe")
+
+# Inicializa lista de testes
 if "tests" not in st.session_state:
     st.session_state["tests"] = []
 
-# --- Informações do jogador ---
-st.markdown("### 🧍 Informations sur le joueur")
-nom = st.text_input("Nom du joueur")
-age = st.number_input("Âge", min_value=8, max_value=18)
+# Formulário de entrada de dados
+with st.form("formulaire_test"):
+    nom = st.text_input("Nom du joueur")
+    age = st.number_input("Âge", min_value=8, max_value=18, step=1)
+    pied = st.selectbox("Pied utilisé", ["Droit", "Gauche"])
+    pression = st.selectbox("Niveau de pression", ["Faible", "Moyenne", "Haute"])
+    nb_reussies = st.number_input("Nombre de passes réussies (sur 6)", min_value=0, max_value=6)
+    temps_moyen = st.number_input("Temps moyen pour chaque passe (s)", min_value=0.0, max_value=15.0, step=0.1)
+    precision = round((nb_reussies / 6) * 100, 2)
 
-# --- Detalhes do teste ---
-st.markdown("### 🎯 Détails du test")
-pied = st.selectbox("Pied utilisé", ["Pied gauche", "Pied droit"])
-pression = st.selectbox("Niveau de pression", ["Faible (12s)", "Moyenne (6s)", "Élevée (3s)"])
-nb_acertes = st.selectbox("Nombre de passes réussies sur 6", [0, 1, 2, 3, 4, 5, 6])
+    # Geração de plano de ação básico
+    if precision >= 80:
+        plan_action = "Excellent niveau de précision, continuer ainsi."
+    elif precision >= 50:
+        plan_action = "Bon niveau, travailler la régularité et la vitesse de réaction."
+    else:
+        plan_action = "Amélioration nécessaire en précision et concentration."
 
-# --- Captura dos tempos de reação ---
-temps_reactions = []
-if nb_acertes > 0:
-    st.markdown("Saisir les temps de réaction (en secondes) pour chaque passe réussie :")
-    for i in range(1, nb_acertes + 1):
-        t = st.number_input(f"Temps pour la passe {i}", min_value=0.0, max_value=15.0, step=0.1, key=f"passe_{i}")
-        temps_reactions.append(t)
+    submitted = st.form_submit_button("Ajouter ce test")
 
-# --- Botão para adicionar o teste ---
-if st.button("+ Ajouter ce test"):
-    if nom and age:
-        precision = round((nb_acertes / 6) * 100, 1)
-        temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2) if nb_acertes > 0 else 0.0
-
-        # --- Geração do plano de ação profissional ---
-        if precision < 60 or temps_moyen > 6:
-            plan = """🟥 Niveau Prioritaire – Amélioration urgente
-
-**Objectif :** Améliorer la précision du passe sous pression et la prise de décision rapide.  
-**Exercices recommandés :**
-- Passe courte avec cible visuelle (Blazepod ou plots)
-- Enchaînement contrôle-passe en triangle
-- Jeu à 1 touche dans un espace réduit
-- Scanning visuel avant l'exécution
-
-**Fréquence :** 3 fois par semaine pendant 4 semaines  
-**Cible :** Atteindre 70% de précision en pression moyenne"""
-        elif 60 <= precision < 70 or 4 <= temps_moyen <= 6:
-            plan = """🟨 Niveau Modéré – Consolider les acquis
-
-**Objectif :** Stabiliser la régularité du passe sous pression modérée.  
-**Exercices recommandés :**
-- Passe à 2 touches avec changement d'appui
-- Variation de surfaces de passe
-- Travail après course courte (effort + précision)
-
-**Fréquence :** 2 fois par semaine pendant 3 semaines  
-**Cible :** Maintenir au-dessus de 70% en situation réelle"""
-        else:
-            plan = """🟩 Niveau Avancé – Maintien et transfert
-
-**Objectif :** Intégrer la qualité de passe dans le jeu réel.  
-**Exercices recommandés :**
-- Jeu réduit avec 1 touche
-- Passe en 3e homme
-- Analyse vidéo de prise d'information
-
-**Fréquence :** 1 session spécifique/semaine  
-**Cible :** Transfert vers les matchs"""
-
-        # Dados do teste
-        test_data = {
-            "Nom": nom,
-            "Âge": age,
-            "Pied": pied,
-            "Niveau de pression": pression,
-            "Nb passes réussies": nb_acertes,
-            "Temps moyen (s)": temps_moyen,
-            "Précision (%)": precision,
-            "Plan d'action": plan
-        }
-
-        # Salvar localmente na sessão
-        st.session_state["tests"].append(test_data)
-
-        # Salvar no Google Sheets
-        from datetime import datetime
+    if submitted:
         date = datetime.now().strftime("%Y-%m-%d")
         exercice = "Passe"
 
+        test_data = {
+            "Date": date,
+            "Nom": nom,
+            "Âge": age,
+            "Exercice": exercice,
+            "Pied": pied,
+            "Niveau de pression": pression,
+            "Précision (%)": precision,
+            "Temps moyen (s)": temps_moyen,
+            "Plan d'action": plan_action
+        }
+
+        st.session_state["tests"].append(test_data)
+
+        # Salvar no Google Sheets
         worksheet.append_row([
-            date,
+            test_data["Date"],
             test_data["Nom"],
             test_data["Âge"],
-            exercice,
+            test_data["Exercice"],
             test_data["Pied"],
             test_data["Niveau de pression"],
             test_data["Précision (%)"],
@@ -113,3 +77,10 @@ if st.button("+ Ajouter ce test"):
         ])
 
         st.success("✅ Teste adicionado com sucesso com plan d’action professionnel!")
+
+# --- Exibição dos testes adicionados ---
+if st.session_state["tests"]:
+    st.markdown("### 📊 Résultats enregistrés (session en cours)")
+    df = pd.DataFrame(st.session_state["tests"])
+    st.dataframe(df, use_container_width=True)
+
