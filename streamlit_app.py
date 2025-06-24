@@ -1,99 +1,129 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="IA Soccer – Analyse de Passe", layout="wide")
-st.title("🎯 IA Soccer – Analyse de Passe – Série Complète")
+st.set_page_config(page_title="Analyse de Passe – IA Soccer", layout="wide")
+st.title("🧠 IA Soccer – Analyse du Passe avec IA")
 
-# Initialisation
-if "passe_series" not in st.session_state:
-    st.session_state["passe_series"] = []
-if "passe_temp" not in st.session_state:
-    st.session_state["passe_temp"] = []
+# Initialisation de la mémoire
+if "tests" not in st.session_state:
+    st.session_state["tests"] = []
 
-# 🔍 IA – Analyse finale
-def analyse_serie(passes, age, pression):
-    total = len(passes)
-    reussis = sum(1 for p in passes if p["Réussi"] == "Oui")
-    precision = (reussis / total) * 100
-    temps_moyen = sum(p["Temps (s)"] for p in passes) / total
-
-    plan = []
-
-    if precision >= 80:
-        note = "Excellent"
-        plan.append("🟢 Passes précises, maintenir la constance sous pression.")
-    elif precision >= 50:
-        note = "Moyen"
-        plan.append("🟠 Travailler la stabilité du geste et la vitesse d'exécution.")
-    else:
-        note = "À améliorer"
-        plan.append("🔴 Répétitions ciblées sur des passes simples avec corrections vidéo.")
-
-    if pression == 3:
-        plan.append("🔥 Réagir rapidement à des stimuli visuels dans des jeux réduits (3v3).")
-    elif pression == 6:
-        plan.append("💨 Travailler en binôme avec pression simulée (2 secondes max).")
-    else:
-        plan.append("🧊 Stabiliser la technique sans contrainte de temps.")
-
-    if age < 12:
-        plan.append("🎯 Jeux avec Blazepod pour améliorer les réflexes.")
-    else:
-        plan.append("🧠 Ajouter la prise de décision dans le choix du type de passe.")
-
-    return precision, temps_moyen, note, " • ".join(plan)
-
-# 👤 Informations du joueur
-st.markdown("### 👤 Informations sur le joueur")
+st.markdown("### 🧑‍🎓 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
-age = st.number_input("Âge", min_value=8, max_value=18, step=1)
-pression = st.selectbox("Niveau de pression", ["Sans pression (12s)", "Pression moyenne (6s)", "Haute pression (3s)"])
-pression_val = {"Sans pression (12s)": 12, "Pression moyenne (6s)": 6, "Haute pression (3s)": 3}[pression]
+age = st.number_input("Âge", min_value=8, max_value=18)
 
-# ➕ Ajouter un passe
-st.markdown("### ➕ Ajouter chaque passe")
-cible = st.selectbox("Cible visée", [1, 2, 3, 4, 5, 6])
-temps = st.number_input("Temps de réaction (en secondes)", min_value=0.0, step=0.01)
-reussi = st.radio("Passe réussie ?", ["Oui", "Non"])
+st.markdown("### 🎯 Détails du test")
+pied = st.selectbox("Pied utilisé", ["Pied gauche", "Pied droit"])
+pression = st.selectbox("Niveau de pression", ["Faible (12s)", "Moyenne (6s)", "Élevée (3s)"])
+nb_acertes = st.slider("Nombre de passes réussies sur 6", 0, 6, 3)
 
-if st.button("Ajouter ce passe"):
-    st.session_state["passe_temp"].append({
-        "Cible": cible,
-        "Temps (s)": temps,
-        "Réussi": reussi
-    })
+temps_reactions = []
+if nb_acertes > 0:
+    st.markdown("Saisir les temps de réaction (en secondes) pour chaque passe réussie :")
+    for i in range(1, nb_acertes + 1):
+        t = st.number_input(f"Temps pour la passe {i}", min_value=0.0, max_value=15.0, step=0.1, key=f"passe_{i}")
+        temps_reactions.append(t)
 
-# 📋 Tableau temporaire
-if st.session_state["passe_temp"]:
-    st.markdown("### 📌 Passes enregistrées")
-    st.dataframe(pd.DataFrame(st.session_state["passe_temp"]), use_container_width=True)
+if st.button("➕ Ajouter ce test"):
+    if nom and age:
+        precision = round((nb_acertes / 6) * 100, 1)
+        if nb_acertes == 0:
+            temps_moyen = 0.0
+        else:
+            temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2)
 
-# ✅ Finaliser la série
-if st.button("✅ Finaliser la série"):
-    if nom and len(st.session_state["passe_temp"]) == 6:
-        precision, temps_moyen, note, plan = analyse_serie(
-            st.session_state["passe_temp"], age, pression_val
-        )
-        st.session_state["passe_series"].append({
+        st.session_state["tests"].append({
             "Nom": nom,
             "Âge": age,
+            "Pied": pied,
             "Pression": pression,
-            "Précision (%)": round(precision, 1),
-            "Temps moyen (s)": round(temps_moyen, 2),
-            "Note": note,
-            "Plan d'action": plan
+            "Précision (%)": precision,
+            "Temps moyen (s)": temps_moyen
         })
-        st.session_state["passe_temp"] = []
+        st.success("✅ Test ajouté avec succès!")
     else:
-        st.warning("Veuillez entrer un nom et enregistrer exactement 6 passes.")
+        st.warning("Veuillez remplir toutes les informations pour ajouter le test.")
 
-# 📊 Résultats finaux
-if st.session_state["passe_series"]:
-    st.markdown("### 📊 Séries de passe complètes")
-    df = pd.DataFrame(st.session_state["passe_series"])
+# Afficher les tests ajoutés
+if st.session_state["tests"]:
+    st.markdown("### 📊 Tests enregistrés")
+    df = pd.DataFrame(st.session_state["tests"])
     st.dataframe(df, use_container_width=True)
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Télécharger (.csv)", csv, "series_passe.csv", "text/csv")
+
+    if st.button("📄 Générer le rapport final"):
+        st.markdown(f"### 📌 Rapport final pour {nom}, {age} ans")
+
+        for pied_type in ["Pied gauche", "Pied droit"]:
+            sous_df = df[df["Pied"] == pied_type]
+            if not sous_df.empty:
+                st.markdown(f"#### 🦶 {pied_type}")
+                st.dataframe(sous_df[["Pression", "Précision (%)", "Temps moyen (s)"]])
+
+                precision_moy = sous_df["Précision (%)"].mean()
+                temps_moy = sous_df["Temps moyen (s)"].mean()
+
+                st.markdown(f"- **Précision moyenne :** {precision_moy:.1f}%")
+                st.markdown(f"- **Temps moyen de réaction :** {temps_moy:.2f} s")
+
+                # 🔍 Analyse
+                st.markdown("### 🧠 Analyse automatique")
+                if precision_moy >= 70:
+                    st.markdown("- ✅ **Précision élevée** – bon contrôle.")
+                elif 50 <= precision_moy < 70:
+                    st.markdown("- ⚠️ **Précision moyenne** – amélioration possible.")
+                else:
+                    st.markdown("- ❌ **Faible précision** – travailler la régularité et la concentration.")
+
+                if temps_moy < 4:
+                    st.markdown("- ✅ **Réaction rapide** – excellente lecture du stimulus.")
+                elif 4 <= temps_moy <= 6:
+                    st.markdown("- ⚠️ **Réaction modérée** – à améliorer.")
+                else:
+                    st.markdown("- ❌ **Réaction lente** – s'entraîner sous pression réelle.")
+
+                st.markdown("### 🎯 Plan d'action recommandé")
+
+                if precision_moy < 60 or temps_moy > 6:
+                    st.markdown("""
+#### 🟥 Niveau Prioritaire – Amélioration urgente
+
+**Objectif :** Améliorer la précision du passe sous pression et la prise de décision rapide.  
+**Exercices :**
+- Passe courte avec cible visuelle (Blazepod ou plots)
+- Enchaînement contrôle-passe en triangle
+- Jeu à 1 touche dans un espace réduit
+- Scanning visuel avant l'exécution
+
+**Fréquence :** 3 fois par semaine pendant 4 semaines  
+**Objectif :** Atteindre 70% de précision en pression moyenne
+                    """)
+                elif 60 <= precision_moy < 70 or 4 <= temps_moy <= 6:
+                    st.markdown("""
+#### 🟨 Niveau Modéré – Consolider les acquis
+
+**Objectif :** Stabiliser la régularité du passe sous pression modérée.  
+**Exercices :**
+- Passe à 2 touches avec changement d'appui
+- Variation de surfaces de passe
+- Travail après course courte (effort + précision)
+
+**Fréquence :** 2 fois par semaine pendant 3 semaines  
+**Objectif :** Maintenir au-dessus de 70% en situation réelle
+                    """)
+                else:
+                    st.markdown("""
+#### 🟩 Niveau Avancé – Maintien et transfert
+
+**Objectif :** Intégrer la qualité de passe dans le jeu réel.  
+**Exercices :**
+- Jeu réduit avec 1 touche
+- Passe en 3e homme
+- Analyse vidéo de prise d'information
+
+**Fréquence :** 1 session spécifique/semaine  
+**Objectif :** Transfert vers les matchs
+                    """)
+
 
 
 
