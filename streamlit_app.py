@@ -128,6 +128,11 @@ if st.session_state["conduite_tests"]:
 from fpdf import FPDF
 import base64
 import io
+import re
+
+def clean_text(text):
+    # Remove emojis e caracteres fora do padrão Latin-1
+    return re.sub(r"[^\x00-\xFF]", "", text)
 
 def exporter_pdf(joueur):
     pdf = FPDF()
@@ -146,7 +151,9 @@ def exporter_pdf(joueur):
     pdf.cell(200, 10, txt=f"Perte de Contrôle: {joueur['Perte de Contrôle']}", ln=True)
     pdf.ln(10)
 
-    pdf.multi_cell(0, 10, txt=f"📊 Analyse IA:\n{joueur['Analyse IA']}")
+    texte_analyse = clean_text(joueur['Analyse IA'])
+
+    pdf.multi_cell(0, 10, txt=f"Analyse IA:\n{texte_analyse}")
     
     pdf_output = io.BytesIO()
     pdf.output(pdf_output)
@@ -158,8 +165,3 @@ def exporter_pdf(joueur):
             📄 Télécharger le rapport PDF pour {joueur['Nom']}
         </a>
     """, unsafe_allow_html=True)
-
-# Geração do PDF para o último teste
-if st.session_state["conduite_tests"]:
-    dernier_test = st.session_state["conduite_tests"][-1]
-    exporter_pdf(dernier_test)
