@@ -94,20 +94,31 @@ if st.button("+ Ajouter ce test"):
         st.session_state["tests"].append(test_data)
 
         # Salvar no Google Sheets
-        worksheet.append_row([
-            test_data["Nom"], test_data["Âge"], test_data["Pied"], test_data["Niveau de pression"],
-            test_data["Nb passes réussies"], test_data["Temps moyen"],
-            test_data["Précision (%)"], test_data["Plan d'action"]
-        ])
+       from datetime import datetime
 
-        st.success("✅ Teste adicionado com sucesso com plan d’action professionnel!")
+# ...
 
-# --- Exibição dos testes adicionados ---
-if st.session_state["tests"]:
-    st.markdown("### 📊 Résultats enregistrés (session en cours)")
-    df = pd.DataFrame(st.session_state["tests"])
-    st.dataframe(df, use_container_width=True)
-)
+st.session_state["tests"].append(test_data)
+
+# 🟢 Adicionar data e tipo de exercício
+date = datetime.now().strftime("%Y-%m-%d")
+exercice = "Passe"
+
+# 🟢 Salvar no Google Sheets com colunas completas e na ordem certa
+worksheet.append_row([
+    date,
+    test_data["Nom"],
+    test_data["Âge"],
+    exercice,
+    test_data["Pied"],
+    test_data["Niveau de pression"],
+    test_data["Précision (%)"],
+    test_data["Temps moyen (s)"],
+    test_data["Plan d'action"]
+])
+
+st.success("✅ Teste adicionado com sucesso com plan d’action professionnel!")
+
 
 
 
