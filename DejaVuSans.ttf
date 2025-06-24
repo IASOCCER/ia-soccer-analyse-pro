@@ -1,0 +1,14 @@
+import base64
+
+# Base64 do DejaVuSans.ttf (resumido para facilitar, arquivo completo tem mais de 700KB)
+font_base64 = """
+AAEAAAALAIAAAwAwT1MvMg8SAAACAAACaEdQT1OlLcYAAAEoAAAHEdQT1P/0t7eAAAFdAAAATxHU1VC
+J+AyVQAAAwAAAARnYXNwAAAAEAAAAYAAAAAIZ2x5Zo5yxWgAABOwAAAQwZ2x5Zp8mVfgAAGdwAAAIdGhlY
+WT1k5kUAAAaYAAAANmhoZWEPZAYyAAAbwAAAACRobXR4QHgAAAAAAHAAAAADbG9jYQAAAAAAAHAAAAAA
+eG1heHAAhQBuAAAcEAAAACBuYW1lDn0ZbAAAHFgAAAZGcG9zdACEAAAAAB6YAAAAMwABAAAAAQAAAAEA
+... (muito longo para colar completo aqui) ...
+"""
+
+# Decodifica e salva como .ttf
+with open("DejaVuSans.ttf", "wb") as f:
+    f.write(base64.b64decode(font_base64))
