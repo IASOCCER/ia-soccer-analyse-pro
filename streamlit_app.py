@@ -13,10 +13,10 @@ pied = st.selectbox("Pied utilisé", ["Pied dominant", "Pied non-dominant"])
 pression = st.selectbox("Niveau de pression", ["Faible (12s)", "Moyenne (6s)", "Élevée (3s)"])
 
 # Résultats
-    st.markdown("### 📌 Plan d'action recommandé")
+st.markdown("### 📌 Plan d'action recommandé")
 
-    if precision < 60 or temps_moyen > 6:
-        st.markdown("""
+if precision < 60 or temps_moyen > 6:
+st.markdown("""
 #### 🟥 Niveau Prioritaire – Amélioration urgente
 
 **🎯 Objectif technique :** Améliorer la précision du passe sous pression et la prise de décision rapide.  
