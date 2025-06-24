@@ -1,25 +1,20 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="IA Soccer Analyse Pro", layout="wide")
+st.set_page_config(page_title="IA Soccer – Analyse Technique", layout="wide")
 st.title("⚽ IA Soccer – Analyse Technique des Joueurs")
 
-# Menu principal
-menu = st.sidebar.selectbox("Choisissez un test :", ["Test de passe", "Conduite de balle – Zigzag", "Conduite de balle – Ligne droite"])
+menu = st.sidebar.selectbox("Choisir l'exercice", ["Test de Passe", "Conduite de Balle – Zigzag", "Conduite de Balle – Ligne Droite"])
 
-# Initialiser les données
 if "tests" not in st.session_state:
     st.session_state["tests"] = []
 
-# Formulaire joueur (utilisé dans tous les tests)
-st.sidebar.markdown("### Informations du joueur")
-nom = st.sidebar.text_input("Nom du joueur")
-age = st.sidebar.number_input("Âge", min_value=8, max_value=18, step=1)
+st.markdown("### 🧑‍🎓 Informations sur le joueur")
+nom = st.text_input("Nom du joueur")
+age = st.number_input("Âge", min_value=8, max_value=18)
 
-# === TEST DE PASSE ===
-if menu == "Test de passe":
-    st.header("🎯 Test de Passe avec IA")
-
+if menu == "Test de Passe":
+    st.markdown("### 🎯 Détails du test de passe")
     pied = st.selectbox("Pied utilisé", ["Pied gauche", "Pied droit"])
     pression = st.selectbox("Niveau de pression", ["Faible (12s)", "Moyenne (6s)", "Élevée (3s)"])
     nb_acertes = st.slider("Nombre de passes réussies sur 6", 0, 6, 3)
@@ -37,147 +32,160 @@ if menu == "Test de passe":
             temps_moyen = round(sum(temps_reactions) / len(temps_reactions), 2) if nb_acertes > 0 else 0.0
 
             st.session_state["tests"].append({
+                "Exercice": "Passe",
                 "Nom": nom,
                 "Âge": age,
-                "Test": "Passe",
                 "Pied": pied,
                 "Pression": pression,
                 "Précision (%)": precision,
                 "Temps moyen (s)": temps_moyen
             })
-            st.success("✅ Test de passe ajouté avec succès!")
+            st.success("✅ Test ajouté avec succès!")
         else:
             st.warning("Veuillez remplir toutes les informations pour ajouter le test.")
 
-# === CONDUITE DE BALLE – ZIGZAG ===
-elif menu == "Conduite de balle – Zigzag":
-    st.header("🔀 Test de Conduite de Balle – Zigzag")
-    distance = st.selectbox("Distance totale", ["15 mètres", "20 mètres"])
-    temps = st.number_input("Temps réalisé (en secondes)", min_value=0.0, max_value=30.0, step=0.1)
+if menu in ["Conduite de Balle – Zigzag", "Conduite de Balle – Ligne Droite"]:
+    st.markdown(f"### 🏃 Détails du test de {menu}")
+    distance = st.selectbox("Distance du parcours", ["15 mètres", "20 mètres"])
+    temps_total = st.number_input("Temps total (en secondes)", min_value=0.0, max_value=30.0, step=0.1)
 
-    if st.button("➕ Ajouter ce test zigzag"):
+    if st.button("➕ Ajouter ce test"):
         if nom and age:
             st.session_state["tests"].append({
+                "Exercice": menu,
                 "Nom": nom,
                 "Âge": age,
-                "Test": "Conduite Zigzag",
                 "Distance": distance,
-                "Temps (s)": temps
+                "Temps (s)": temps_total
             })
             st.success("✅ Test ajouté avec succès!")
         else:
             st.warning("Veuillez remplir toutes les informations pour ajouter le test.")
 
-# === CONDUITE DE BALLE – LIGNE DROITE ===
-elif menu == "Conduite de balle – Ligne droite":
-    st.header("📏 Test de Conduite de Balle – Ligne Droite")
-    distance_ld = st.selectbox("Distance totale", ["10 mètres", "15 mètres"])
-    temps_ld = st.number_input("Temps réalisé (en secondes)", min_value=0.0, max_value=20.0, step=0.1, key="ligne_droite")
-
-    if st.button("➕ Ajouter ce test ligne droite"):
-        if nom and age:
-            st.session_state["tests"].append({
-                "Nom": nom,
-                "Âge": age,
-                "Test": "Conduite Ligne Droite",
-                "Distance": distance_ld,
-                "Temps (s)": temps_ld
-            })
-            st.success("✅ Test ajouté avec succès!")
-        else:
-            st.warning("Veuillez remplir toutes les informations pour ajouter le test.")
-
-# === AFFICHAGE DES TESTS ===
+# Affichage des résultats
 if st.session_state["tests"]:
-    st.markdown("### 📊 Tous les tests enregistrés")
+    st.markdown("### 📊 Tests enregistrés")
     df = pd.DataFrame(st.session_state["tests"])
     st.dataframe(df, use_container_width=True)
 
-    if st.button("📄 Générer les rapports"):
-        st.markdown(f"### 📌 Rapport pour {nom}, {age} ans")
+    if st.button("📄 Générer le rapport final"):
+        st.markdown(f"### 📌 Rapport final pour {nom}, {age} ans")
 
-        # Rapport – Test de passe
-        df_passe = df[df["Test"] == "Passe"]
-        if not df_passe.empty:
-            for pied_type in ["Pied gauche", "Pied droit"]:
-                sous_df = df_passe[df_passe["Pied"] == pied_type]
-                if not sous_df.empty:
-                    st.markdown(f"#### 🦶 Passe – {pied_type}")
-                    st.dataframe(sous_df[["Pression", "Précision (%)", "Temps moyen (s)"]])
+        for exercice in df["Exercice"].unique():
+            sous_df = df[df["Exercice"] == exercice]
+            st.markdown(f"#### 📌 {exercice}")
+            st.dataframe(sous_df.drop(columns=["Nom", "Âge", "Exercice"]))
 
-                    precision_moy = sous_df["Précision (%)"].mean()
-                    temps_moy = sous_df["Temps moyen (s)"].mean()
-
-                    st.markdown(f"- **Précision moyenne :** {precision_moy:.1f}%")
-                    st.markdown(f"- **Temps moyen de réaction :** {temps_moy:.2f} s")
-
-                    st.markdown("### 🧠 Analyse automatique")
-                    if precision_moy >= 70:
-                        st.markdown("- ✅ **Précision élevée** – bon contrôle.")
-                    elif 50 <= precision_moy < 70:
-                        st.markdown("- ⚠️ **Précision moyenne** – amélioration possible.")
-                    else:
-                        st.markdown("- ❌ **Faible précision** – travailler la régularité et la concentration.")
-
-                    if temps_moy < 4:
-                        st.markdown("- ✅ **Réaction rapide** – excellente lecture du stimulus.")
-                    elif 4 <= temps_moy <= 6:
-                        st.markdown("- ⚠️ **Réaction modérée** – à améliorer.")
-                    else:
-                        st.markdown("- ❌ **Réaction lente** – s'entraîner sous pression réelle.")
-
-        # Rapport – Conduite de balle (zigzag et ligne droite)
-        for test_type in ["Conduite Zigzag", "Conduite Ligne Droite"]:
-            df_cond = df[df["Test"] == test_type]
-            if not df_cond.empty:
-                st.markdown(f"#### 🚀 {test_type}")
-                st.dataframe(df_cond[["Distance", "Temps (s)"]])
-
-                temps_moyen = df_cond["Temps (s)"].mean()
-                st.markdown(f"- **Temps moyen :** {temps_moyen:.2f} s")
+            if exercice == "Test de Passe":
+                precision_moy = sous_df["Précision (%)"].mean()
+                temps_moy = sous_df["Temps moyen (s)"].mean()
+                st.markdown(f"- **Précision moyenne :** {precision_moy:.1f}%")
+                st.markdown(f"- **Temps moyen de réaction :** {temps_moy:.2f} s")
 
                 st.markdown("### 🧠 Analyse automatique")
-                if temps_moyen <= 6:
-                    st.markdown("- ✅ **Très rapide** – excellente maîtrise.")
-                elif 6 < temps_moyen <= 8:
-                    st.markdown("- ⚠️ **Temps modéré** – bonne base, à optimiser.")
+                if precision_moy >= 70:
+                    st.markdown("- ✅ **Précision élevée** – bon contrôle.")
+                elif 50 <= precision_moy < 70:
+                    st.markdown("- ⚠️ **Précision moyenne** – amélioration possible.")
                 else:
-                    st.markdown("- ❌ **Temps élevé** – besoin de travail technique et coordination.")
+                    st.markdown("- ❌ **Faible précision** – travailler la régularité et la concentration.")
+
+                if temps_moy < 4:
+                    st.markdown("- ✅ **Réaction rapide** – excellente lecture du stimulus.")
+                elif 4 <= temps_moy <= 6:
+                    st.markdown("- ⚠️ **Réaction modérée** – à améliorer.")
+                else:
+                    st.markdown("- ❌ **Réaction lente** – s'entraîner sous pression réelle.")
 
                 st.markdown("### 🎯 Plan d'action recommandé")
-                if temps_moyen > 8:
-                    st.markdown("""
-#### 🟥 Niveau Prioritaire
 
-**Objectif :** Améliorer la vitesse et le contrôle de balle.  
+                if precision_moy < 60 or temps_moy > 6:
+                    st.markdown("""
+#### 🟥 Niveau Prioritaire – Amélioration urgente
+
+**Objectif :** Améliorer la précision du passe sous pression et la prise de décision rapide.  
 **Exercices :**
-- Conduite balle proche en zigzag
-- Slalom rapide chronométré
-- Jeux réduits avec transitions
+- Passe courte avec cible visuelle (Blazepod ou plots)
+- Enchaînement contrôle-passe en triangle
+- Jeu à 1 touche dans un espace réduit
+- Scanning visuel avant l'exécution
+
+**Fréquence :** 3 fois par semaine pendant 4 semaines  
+**Objectif :** Atteindre 70% de précision en pression moyenne
                     """)
-                elif 6 < temps_moyen <= 8:
+                elif 60 <= precision_moy < 70 or 4 <= temps_moy <= 6:
                     st.markdown("""
-#### 🟨 Niveau Modéré
+#### 🟨 Niveau Modéré – Consolider les acquis
 
-**Objectif :** Optimiser l'efficacité technique.  
+**Objectif :** Stabiliser la régularité du passe sous pression modérée.  
 **Exercices :**
-- Conduite sur 15m avec obstacles
-- Travail en duo avec pression
-- Changement de rythme avec ballon
+- Passe à 2 touches avec changement d'appui
+- Variation de surfaces de passe
+- Travail après course courte (effort + précision)
+
+**Fréquence :** 2 fois par semaine pendant 3 semaines  
+**Objectif :** Maintenir au-dessus de 70% en situation réelle
                     """)
                 else:
                     st.markdown("""
-#### 🟩 Niveau Avancé
+#### 🟩 Niveau Avancé – Maintien et transfert
 
-**Objectif :** Transfert vers match réel.  
+**Objectif :** Intégrer la qualité de passe dans le jeu réel.  
 **Exercices :**
-- Jeu libre avec touche limitée
-- Conduite + passe décisive
-- Vidéo feedback
+- Jeu réduit avec 1 touche
+- Passe en 3e homme
+- Analyse vidéo de prise d'information
+
+**Fréquence :** 1 session spécifique/semaine  
+**Objectif :** Transfert vers les matchs
                     """)
 
+            elif "Conduite de Balle" in exercice:
+                temps_moy = sous_df["Temps (s)"].mean()
+                st.markdown(f"- **Temps moyen :** {temps_moy:.2f} s")
 
-    if st.button("➕ Ajouter ce test", key="ajouter_circuit"):
-        st.success(f"Test enregistré: {nom}, {age} ans, {temps}s")
+                st.markdown("### 🧠 Analyse automatique")
+                if temps_moy < 5:
+                    st.markdown("- ✅ **Excellente maîtrise de balle** – très rapide.")
+                elif 5 <= temps_moy < 7:
+                    st.markdown("- ⚠️ **Bon niveau** – à stabiliser.")
+                else:
+                    st.markdown("- ❌ **Temps élevé** – travailler la conduite sous pression.")
+
+                st.markdown("### 🎯 Plan d'action recommandé")
+                if temps_moy >= 7:
+                    st.markdown("""
+#### 🟥 Niveau Prioritaire – Travail de base
+
+**Objectif :** Réduire le temps de conduite avec contrôle.  
+**Exercices :**
+- Slalom entre plots avec consigne de toucher le ballon tous les 2 appuis
+- Travail avec Blazepod pour prise d’information
+- Course avec changement de direction en conduite
+
+**Fréquence :** 3 fois par semaine pendant 4 semaines
+                    """)
+                elif 5 <= temps_moy < 7:
+                    st.markdown("""
+#### 🟨 Niveau Modéré – Stabilité technique
+
+**Objectif :** Maintenir la performance dans diverses conditions.  
+**Exercices :**
+- Conduite après effort (ex : sortie de sprint)
+- Parcours technique en zigzag avec finalisation
+
+**Fréquence :** 2 fois/semaine pendant 3 semaines
+                    """)
+                else:
+                    st.markdown("""
+#### 🟩 Niveau Avancé – Transfert au jeu
+
+**Objectif :** Intégrer la conduite rapide dans des situations de match.  
+**Exercices :**
+- Conduite dans petits espaces
+- Progression sous pression avec opposition passive
+
+**Fréquence :** 1 session/semaine
+                    """)
 
 
