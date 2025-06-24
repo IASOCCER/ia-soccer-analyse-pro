@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
-import openai
+from openai import OpenAI
+
+# Autenticação correta da API:
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
 
 st.set_page_config(page_title="Analyse de Remate – IA Soccer", layout="wide")
 st.title("🔥 IA Soccer – Analyse du Remate")
 
-# API OpenAI
-openai.api_key = st.secrets["api_key"]
-
-# Base de référence professionnelle (exemplo simplificado por idade)
 base_reference = {
     8: {"vitesse": 40, "precision": 30},
     9: {"vitesse": 45, "precision": 35},
@@ -31,14 +30,14 @@ nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
 
 st.markdown("### 🥅 Détails du test de remate")
-distance = st.selectbox("Distance du tir", [6, 8, 10])
+distance = st.selectbox("Distance du tir (m)", [6, 8, 10])
 nb_tirs = st.number_input("Nombre total de tirs", min_value=1, value=10)
 nb_alvo = st.number_input("Nombre d'alvéoles touchées", min_value=0, max_value=nb_tirs)
 vitesse = st.number_input("Vitesse moyenne du tir (km/h)", min_value=0)
 pied = st.selectbox("Pied utilisé", ["Droit", "Gauche"])
 
 if st.button("✅ Ajouter ce test"):
-    precision = round((nb_alvo / nb_tirs) * 100, 1) if nb_tirs > 0 else 0
+    precision = round((nb_alvo / nb_tirs) * 100, 1) if nb_tirs else 0
     ref = base_reference.get(age, {"vitesse": 60, "precision": 50})
 
     niveau = "Insuffisant"
@@ -49,18 +48,19 @@ if st.button("✅ Ajouter ce test"):
     elif precision >= ref["precision"] - 20 and vitesse >= ref["vitesse"] - 20:
         niveau = "Moyen"
 
+    # Função atualizada da IA:
     def generer_analyse_ia(nom, age, distance, nb_tirs, nb_alvo, vitesse, pied, niveau):
         prompt = f"""
-        Tu es un entraîneur professionnel de football. Analyse la performance du joueur {nom}, âgé de {age} ans.
-        Il a tiré {nb_tirs} fois à une distance de {distance} mètres avec le pied {pied}.
-        Il a touché {nb_alvo} cibles et sa vitesse moyenne a été de {vitesse} km/h.
-        Le niveau global du tir a été évalué comme {niveau}.
-        Fais une analyse professionnelle de la précision et de la puissance du tir et propose un plan d’action avec des exercices pour s’améliorer.
-        """
-        response = openai.chat.completions.create(
-            model="gpt-4",
+Tu es un entraîneur professionnel. Analyse ce test de remate :
+Nom : {nom}, Âge : {age} ans, Distance : {distance} m, Tirs : {nb_tirs}, Alvéoles touchées : {nb_alvo}, Vitesse : {vitesse} km/h, Pied : {pied}.
+Niveau : {niveau}.
+Compare avec les standards des grandes académies (PSG, Real Madrid, Benfica). Analyse précision et puissance, puis propose un plan d’action en 3 exercices et progression sur 7 jours.
+"""
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=700
+            temperature=0.7,
+            max_tokens=600
         )
         return response.choices[0].message.content.strip()
 
@@ -78,7 +78,6 @@ if st.button("✅ Ajouter ce test"):
         "Niveau": niveau,
         "Analyse IA": analyse
     }
-
     st.session_state["remate_tests"].append(test)
     st.success("✅ Test ajouté avec succès !")
 
@@ -94,5 +93,4 @@ if st.session_state["remate_tests"]:
         file_name="analyse_remate_ia_soccer.csv",
         mime="text/csv"
     )
-
 
