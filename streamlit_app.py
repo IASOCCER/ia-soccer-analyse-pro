@@ -49,7 +49,7 @@ if st.button("✅ Sauvegarder le joueur"):
         "IMC": imc
     }
     df = df.append(nouvelle_ligne, ignore_index=True)
-    df.to_csv(fichier, index=False)
+    df.to_csv(fichier, index=True)
     st.success("✅ Joueur sauvegardé avec succès!")
 
 st.markdown("---")
