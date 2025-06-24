@@ -47,7 +47,7 @@ Réponds en 5 lignes maximum.
 """
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=400,
             temperature=0.7
