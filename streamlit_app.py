@@ -117,8 +117,7 @@ if st.button("✅ Ajouter ce test avec analyse IA"):
 st.markdown(f"### 📊 Analyse IA pour {dernier_test['Nom']}:")
 st.markdown(dernier_test["Analyse IA"])
 
-# Exportar PDF
-exporter_pdf(dernier_test)
+
 
 
 # 🔽 Baixar PDF com os dados
