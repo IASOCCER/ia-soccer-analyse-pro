@@ -1,114 +1,85 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="IA Soccer Analyse Pro", layout="wide")
-st.title("⚽ IA Soccer – Analyse Technique")
-st.sidebar.markdown("## 📋 Menu d’analyse")
-
-# Menu latéral
-test_selection = st.sidebar.selectbox(
-    "Choisissez un test",
-    ["Conduite", "Passe", "Remate", "Sprint", "Agilité", "Réaction"]
-)
+st.set_page_config(page_title="IA Soccer – Analyse de Passe", layout="wide")
+st.title("🎯 IA Soccer – Analyse de Passe")
 
 # Initialisation
-if "tests" not in st.session_state:
-    st.session_state["tests"] = {
-        "Conduite": [],
-        "Passe": [],
-        "Remate": [],
-        "Sprint": [],
-        "Agilité": [],
-        "Réaction": []
-    }
+if "passe_tests" not in st.session_state:
+    st.session_state["passe_tests"] = []
 
-def ajouter_resultat(categorie, data):
-    st.session_state["tests"][categorie].append(data)
-
-# 🔍 FONCTION IA – CONDUITE
-def evaluer_conduite(age, temps):
-    if age <= 9:
-        if temps < 9:
-            return "Excellent", "Poursuivre avec des parcours plus complexes"
-        elif temps < 11:
-            return "Bon", "Travailler la vitesse avec changements de direction"
-        else:
-            return "À améliorer", "Renforcer la coordination et agilité"
-    elif age <= 12:
-        if temps < 8:
-            return "Excellent", "Tester avec obstacles supplémentaires"
-        elif temps < 10:
-            return "Bon", "Maintenir le rythme et affiner le contrôle"
-        else:
-            return "À améliorer", "Répéter les circuits courts sous pression"
-    else:
-        if temps < 7.5:
-            return "Excellent", "Évaluer en condition de match"
-        elif temps < 9.5:
-            return "Bon", "Augmenter l’intensité avec contraintes"
-        else:
-            return "À améliorer", "Travailler en séquences courtes avec repos actif"
-
-# 🔍 FONCTION IA – PASSE
+# 🔍 Fonction IA – Évaluation + Plan d'action professionnel
 def evaluer_passe(age, precision, pression):
+    plan = []
+
+    # Bloc 1 : Précision
     if precision >= 80:
-        if pression == 12:
-            return "Excellent", "Intégrer des passes en mouvement avec opposition"
-        elif pression == 6:
-            return "Très bon", "Simuler des passes sous pression dans espace réduit"
-        else:
-            return "Bon", "Travailler la vision et la vitesse d’exécution"
+        note = "Excellent"
+        plan.append("🟢 Maintenir la régularité avec des passes sous pression en mouvement.")
+        plan.append("🔁 Introduire des passes avec changements de direction rapides.")
     elif precision >= 50:
-        return "Moyen", "Augmenter la répétition avec variation de cible"
+        note = "Moyen"
+        plan.append("🟠 Améliorer la précision avec des séries de 10 passes fixes sur cible.")
+        plan.append("👣 Corriger l'appui du pied non-dominant.")
     else:
-        return "À améliorer", "Corriger la posture et le geste de passe"
+        note = "À améliorer"
+        plan.append("🔴 Répéter des passes à courte distance avec corrections vidéo.")
+        plan.append("👀 Travailler la posture et la prise d'information avant le geste.")
 
-# 🔘 FORMULAIRE GÉNÉRAL
-st.header(f"🧪 Test : {test_selection}")
-nom = st.text_input("Nom du joueur", key=f"nom_{test_selection}")
-age = st.number_input("Âge", min_value=8, max_value=18, step=1, key=f"age_{test_selection}")
+    # Bloc 2 : Pression
+    if pression == 3:
+        plan.append("🔥 Simuler des passes en situation de match à haute intensité (jeu réduit 3v3).")
+    elif pression == 6:
+        plan.append("💨 Répéter des passes avec adversaire fictif (pression moyenne, 2 secondes).")
+    else:
+        plan.append("🧊 Travailler la concentration et la technique sans contrainte de temps.")
 
-# 🛣️ CONDUITE
-if test_selection == "Conduite":
-    temps_total = st.number_input("Temps total (en secondes)", min_value=0.0, step=0.01, key="temps_conduite")
-    if st.button("➕ Ajouter ce test", key="add_conduite"):
-        if nom and temps_total > 0:
-            note, plan = evaluer_conduite(age, temps_total)
-            ajouter_resultat("Conduite", {
-                "Nom": nom,
-                "Âge": age,
-                "Temps (s)": temps_total,
-                "Note": note,
-                "Plan d'action": plan
-            })
+    # Bloc 3 : Âge
+    if age < 12:
+        plan.append("🎯 Jeux ludiques avec Blazepods pour stimuler les réflexes.")
+    else:
+        plan.append("🧠 Ajouter la prise de décision: passer ou conduire selon la situation.")
 
-# 🎯 PASSE
-if test_selection == "Passe":
-    pied = st.selectbox("Pied utilisé", ["Droit", "Gauche"], key="pied_passe")
-    pression = st.selectbox("Pression", ["Sans pression (12s)", "Pression moyenne (6s)", "Haute pression (3s)"], key="pression_passe")
-    pression_val = {"Sans pression (12s)": 12, "Pression moyenne (6s)": 6, "Haute pression (3s)": 3}[pression]
-    cibles_total = 6
-    cibles_reussies = st.number_input("Cibles touchées (sur 6)", min_value=0, max_value=6, step=1, key="cibles_passe")
-    
-    if st.button("➕ Ajouter ce test", key="add_passe"):
-        if nom:
-            precision = (cibles_reussies / cibles_total) * 100
-            note, plan = evaluer_passe(age, precision, pression_val)
-            ajouter_resultat("Passe", {
-                "Nom": nom,
-                "Âge": age,
-                "Pied": pied,
-                "Pression": pression,
-                "Précision (%)": round(precision, 1),
-                "Note": note,
-                "Plan d'action": plan
-            })
+    return note, " • ".join(plan)
 
-# 📊 RÉSULTATS
-if st.session_state["tests"][test_selection]:
-    st.markdown("### 📊 Résultats")
-    df = pd.DataFrame(st.session_state["tests"][test_selection])
+# 👤 Informations du joueur
+st.markdown("### 👤 Informations sur le joueur")
+nom = st.text_input("Nom du joueur")
+age = st.number_input("Âge", min_value=8, max_value=18, step=1)
+pied = st.selectbox("Pied utilisé", ["Droit", "Gauche"])
+pression = st.selectbox("Pression", ["Sans pression (12s)", "Pression moyenne (6s)", "Haute pression (3s)"])
+pression_val = {"Sans pression (12s)": 12, "Pression moyenne (6s)": 6, "Haute pression (3s)": 3}[pression]
+
+# 🎯 Résultats du test
+st.markdown("### 🎯 Résultats du test")
+cibles_total = 6
+cibles_reussies = st.number_input("Cibles touchées (sur 6)", min_value=0, max_value=6, step=1)
+
+# ➕ Ajouter le test
+if st.button("➕ Ajouter ce test"):
+    if nom:
+        precision = (cibles_reussies / cibles_total) * 100
+        note, plan = evaluer_passe(age, precision, pression_val)
+        st.session_state["passe_tests"].append({
+            "Nom": nom,
+            "Âge": age,
+            "Pied": pied,
+            "Pression": pression,
+            "Cibles réussies": cibles_reussies,
+            "Précision (%)": round(precision, 1),
+            "Note": note,
+            "Plan d'action professionnel": plan
+        })
+    else:
+        st.warning("Veuillez entrer le nom du joueur.")
+
+# 📊 Résultats enregistrés
+if st.session_state["passe_tests"]:
+    st.markdown("### 📊 Résultats enregistrés")
+    df = pd.DataFrame(st.session_state["passe_tests"])
     st.dataframe(df, use_container_width=True)
-    csv = df.to_csv(index=False).encode("utf-8")_
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Télécharger (.csv)", csv, "passe_tests.csv", "text/csv")
+
 
 
