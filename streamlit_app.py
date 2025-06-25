@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 
+st.write("Chave está visível?", "OPENAI_API_KEY" in st.secrets)
+
 # Conexão segura com OpenAI (usando secrets do Streamlit Cloud)
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
