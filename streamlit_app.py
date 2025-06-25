@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import openai
 import os
+from openai import OpenAI  # ✅ ADICIONA AQUI
+client = OpenAI()          # ✅ E AQUI TAMBÉM
 
 # 🔐 Clé API
 openai.api_key = os.getenv("OPENAI_API_KEY")
