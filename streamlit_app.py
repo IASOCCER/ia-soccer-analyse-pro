@@ -5,8 +5,8 @@ import os
 from openai import OpenAI  # ✅ ADICIONA AQUI
 client = OpenAI()          # ✅ E AQUI TAMBÉM
 
-# 🔐 Clé API
-openai.api_key = os.getenv("OPENAI_API_KEY")
+from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.set_page_config(page_title="IA Soccer – Analyse du Remate", layout="wide")
 st.title("⚽ IA Soccer – Analyse du Remate Technique avec IA")
