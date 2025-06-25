@@ -1,11 +1,9 @@
 import streamlit as st
 import pandas as pd
-import openai
 import os
-from openai import OpenAI  # ✅ ADICIONA AQUI
-client = OpenAI()          # ✅ E AQUI TAMBÉM
-
 from openai import OpenAI
+
+# Conexão segura com OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 st.set_page_config(page_title="IA Soccer – Analyse du Remate", layout="wide")
