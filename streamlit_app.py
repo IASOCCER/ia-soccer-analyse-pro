@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 
-# ✅ Connexion sécurisée avec la clé API depuis Streamlit Cloud
+# ✅ A forma correta de acessar o secrets no Streamlit Cloud:
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.set_page_config(page_title="IA Soccer – Analyse du Remate", layout="wide")
@@ -65,15 +65,16 @@ Puis, propose un plan d'action personnalisé avec 3 à 5 conseils concrets pour 
 """
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Tu es un entraîneur professionnel spécialisé en analyse technique du football."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=700,
-            temperature=0.7
-        )
+       response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "Tu es un entraîneur professionnel spécialisé en analyse technique du football."},
+        {"role": "user", "content": prompt}
+    ],
+    max_tokens=700,
+    temperature=0.7
+)
+
         return comparaison + "\n" + response.choices[0].message.content
     except Exception as e:
         if "authentication" in str(e).lower():
