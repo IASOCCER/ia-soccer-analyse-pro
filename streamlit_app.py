@@ -639,56 +639,17 @@ Sois concis, professionnel et motivant.
 import io
 import pandas as pd
 
-# Reunir todos os testes (já salvos nas sessões)
-resultats = []
+# Substitua 'df' pelo seu DataFrame final com todos os dados do jogador
+# Exemplo: df = pd.DataFrame(todos_os_dados)
 
-if "passe_tests" in st.session_state:
-    for test in st.session_state["passe_tests"]:
-        test["Type"] = "Passe"
-        resultats.append(test)
+buffer = io.BytesIO()
 
-if "remate_tests" in st.session_state:
-    for test in st.session_state["remate_tests"]:
-        test["Type"] = "Remate"
-        resultats.append(test)
+with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+    df.to_excel(writer, index=False, sheet_name="Analyse complète")
 
-if "sprint_tests" in st.session_state:
-    for test in st.session_state["sprint_tests"]:
-        test["Type"] = "Sprint"
-        resultats.append(test)
-
-if "agilite_tests" in st.session_state:
-    for test in st.session_state["agilite_tests"]:
-        test["Type"] = "Agilité"
-        resultats.append(test)
-
-if "conduite_tests" in st.session_state:
-    for test in st.session_state["conduite_tests"]:
-        test["Type"] = "Conduite"
-        resultats.append(test)
-
-if "muscle_tests" in st.session_state:
-    for test in st.session_state["muscle_tests"]:
-        test["Type"] = "Masse musculaire"
-        resultats.append(test)
-
-# Mostrar e exportar se houver dados
-if resultats:
-    df = pd.DataFrame(resultats)
-
-    st.markdown("### ✅ Résumé de tous les tests")
-    st.dataframe(df)
-
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Résultats')
-        writer.save()
-
-    st.download_button(
-        label="📁 Télécharger le rapport complet (Excel)",
-        data=buffer,
-        file_name="rapport_complet_IA_Soccer.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-else:
-    st.warning("Aucun test enregistré pour ce joueur.")
+st.download_button(
+    label="📥 Télécharger le rapport complet (Excel)",
+    data=buffer.getvalue(),
+    file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",  # 'nom' é o nome do jogador
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
