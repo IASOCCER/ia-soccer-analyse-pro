@@ -75,7 +75,39 @@ Puis, propose un plan d'action personnalisé avec 3 à 5 conseils concrets pour 
     temperature=0.7
 )
 
+     def generer_analyse_remate(nom, age, precision_d, precision_g, vitesse_d, vitesse_g):
+    ref = base_ref.get(age, {"precision": 65, "vitesse": 60})
+    precision_moy = (precision_d + precision_g) / 2
+    vitesse_moy = (vitesse_d + vitesse_g) / 2
+    ecart_precision = round(precision_moy - ref["precision"], 1)
+    ecart_vitesse = round(vitesse_moy - ref["vitesse"], 1)
+
+    comparaison = f"""
+### 📈 Comparaison avec les standards pour {age} ans :
+
+- Précision moyenne du joueur : {precision_moy:.1f}% (écart de {ecart_precision:+.1f}%)
+- Vitesse moyenne des tirs : {vitesse_moy:.1f} km/h (écart de {ecart_vitesse:+.1f} km/h)
+"""
+
+    prompt = f"""
+{comparaison}
+
+Fais une analyse technique complète des tirs de ce joueur ({nom}, {age} ans).
+Puis, propose un plan d'action personnalisé avec 3 à 5 conseils concrets pour améliorer sa puissance, sa précision et sa posture.
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Tu es un entraîneur professionnel spécialisé en analyse technique du football."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=700,
+            temperature=0.7
+        )
         return comparaison + "\n" + response.choices[0].message.content
+
     except Exception as e:
         if "authentication" in str(e).lower():
             return "❌ Erreur d'authentification – vérifie ta clé API OpenAI."
