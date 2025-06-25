@@ -639,17 +639,80 @@ Sois concis, professionnel et motivant.
 import io
 import pandas as pd
 
-# Substitua 'df' pelo seu DataFrame final com todos os dados do jogador
-# Exemplo: df = pd.DataFrame(todos_os_dados)
+# Coletar todos os dados
+donnees = []
 
+# Passe
+for test in st.session_state.get("tests_passe", []):
+    donnees.append({
+        "Exercice": "Passe",
+        "Pied": test.get("Pied"),
+        "Pression": test.get("Pression"),
+        "Précision (%)": test.get("Précision (%)"),
+        "Temps moyen (s)": test.get("Temps moyen (s)")
+    })
+
+# Conduite
+for test in st.session_state.get("conduite_tests", []):
+    donnees.append({
+        "Exercice": "Conduite",
+        "Parcours": test.get("Parcours"),
+        "Temps (s)": test.get("Temps (s)"),
+        "Niveau": test.get("Niveau")
+    })
+
+# Remate
+for test in st.session_state.get("tests_remate", []):
+    donnees.append({
+        "Exercice": "Remate",
+        "Précision Droit (%)": test.get("Précision Droit (%)"),
+        "Précision Gauche (%)": test.get("Précision Gauche (%)"),
+        "Vitesse Moy. Droit (km/h)": test.get("Vitesse Moy. Droit (km/h)"),
+        "Vitesse Moy. Gauche (km/h)": test.get("Vitesse Moy. Gauche (km/h)")
+    })
+
+# Sprint
+for test in st.session_state.get("sprint_tests", []):
+    donnees.append({
+        "Exercice": "Sprint",
+        "Type": test.get("type"),
+        "Temps": test.get("temps"),
+        "Niveau": test.get("niveau"),
+        "Note": test.get("note")
+    })
+
+# Agilité
+for test in st.session_state.get("agility_tests", []):
+    donnees.append({
+        "Exercice": "Agilité",
+        "Pression": test.get("Pression"),
+        "Temps moyen": test.get("Temps moyen"),
+        "Touches": test.get("Touches")
+    })
+
+# Masse musculaire
+for test in st.session_state.get("muscle_tests", []):
+    donnees.append({
+        "Exercice": "Masse musculaire",
+        "Poids": test.get("poids"),
+        "Masse musculaire": test.get("masse_musculaire"),
+        "Niveau": test.get("niveau"),
+        "Note": test.get("note")
+    })
+
+# Criar DataFrame final
+df = pd.DataFrame(donnees)
+
+# Exportar para Excel
 buffer = io.BytesIO()
-
 with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
     df.to_excel(writer, index=False, sheet_name="Analyse complète")
 
+# Botão para download
 st.download_button(
     label="📥 Télécharger le rapport complet (Excel)",
     data=buffer.getvalue(),
-    file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",  # 'nom' é o nome do jogador
+    file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
+
