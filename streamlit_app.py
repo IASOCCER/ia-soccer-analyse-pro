@@ -121,6 +121,82 @@ elif page == "🎯 Passe":
                         st.markdown("- **Objectif :** Consolider la régularité sous pression.")
                     else:
                         st.markdown("- **Objectif :** Transférer la qualité de passe au match réel.")
+elif page == "🎥 Analyse Vidéo – Passe Technique":
+    verifier_joueur()
+    st.title("🎥 Analyse Posturale – Passe Technique")
+
+    import tempfile
+    import cv2
+    import mediapipe as mp
+    from PIL import Image
+
+    mp_drawing = mp.solutions.drawing_utils
+    mp_pose = mp.solutions.pose
+
+    st.markdown("Téléversez une courte vidéo du joueur effectuant un **passe** technique.")
+    video_file = st.file_uploader("📤 Importer la vidéo (format mp4 recommandé)", type=["mp4", "mov", "avi"])
+
+    if video_file is not None:
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(video_file.read())
+        cap = cv2.VideoCapture(tfile.name)
+
+        st.video(video_file)
+
+        with mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5) as pose:
+            frames = []
+            points_detectés = False
+            while cap.isOpened():
+                success, frame = cap.read()
+                if not success:
+                    break
+
+                # Redimensiona e converte
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = pose.process(image)
+
+                if results.pose_landmarks:
+                    points_detectés = True
+                    mp_drawing.draw_landmarks(
+                        image,
+                        results.pose_landmarks,
+                        mp_pose.POSE_CONNECTIONS,
+                        mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                        mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2)
+                    )
+                image = Image.fromarray(image)
+                frames.append(image)
+
+            cap.release()
+
+            if points_detectés:
+                st.success("✅ Points du corps détectés avec succès.")
+                st.image(frames[-1], caption="Image avec squelette détecté", use_column_width=True)
+
+                st.markdown("### 🧠 Analyse Technique IA")
+
+                prompt = f"""
+Un joueur de football exécute un passe technique.
+Basé sur l'image capturée du mouvement, fais une analyse posturale du geste (bras, tronc, jambe d'appui, surface de contact).
+Puis donne 3 conseils précis pour améliorer sa posture et son efficacité technique.
+Sois professionnel, précis et clair.
+"""
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": "Tu es un entraîneur technique de football avec une expertise biomécanique."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=500
+                    )
+                    st.markdown(response.choices[0].message.content)
+                except Exception as e:
+                    st.error(f"❌ Erreur IA : {e}")
+            else:
+                st.warning("Aucun point du corps n’a été détecté. Veuillez réessayer avec une autre vidéo plus claire.")
+
 elif page == "🛞 Conduite":
     verifier_joueur()
     st.title("🛞 Analyse de la Conduite de Balle")
