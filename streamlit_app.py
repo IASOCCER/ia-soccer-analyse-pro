@@ -5,8 +5,8 @@ import pandas as pd
 st.set_page_config(page_title="IA Soccer – Analyse du Remate", layout="wide")
 st.title("🎯 IA Soccer – Analyse du Remate")
 
-import openai
-openai.api_key = st.secrets["api_key"]
+openai.api_key = "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"
+ 
 
 
 if "tir_tests" not in st.session_state:
