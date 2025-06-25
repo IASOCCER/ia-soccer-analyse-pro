@@ -1,16 +1,18 @@
 import streamlit as st
 import pandas as pd
-import openai
+from openai import OpenAI
 
+# ✅ Connexion sécurisée avec la clé API depuis Streamlit Cloud
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.set_page_config(page_title="IA Soccer – Analyse du Remate", layout="wide")
 st.title("⚽ IA Soccer – Analyse du Remate Technique avec IA")
 
-# 📌 Initialisation de la session
+# 📌 Initialisation de la mémoire
 if "tests_remate" not in st.session_state:
     st.session_state["tests_remate"] = []
 
-# 👤 Informations joueur
+# 👤 Informations du joueur
 st.markdown("### 👤 Informations du Joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
@@ -27,7 +29,7 @@ precision_g = st.slider("🎯 Précision (cibles atteintes sur 10)", 0, 10, 0, k
 vitesses_g = [st.number_input(f"Vitesse Tir {i+1} (km/h)", 0.0, 200.0, step=0.1, key=f"v_g{i}") for i in range(10)]
 vitesse_g_moy = round(sum(vitesses_g) / 10, 2)
 
-# 📊 Base de référence
+# 📊 Base de référence par âge
 base_ref = {
     10: {"precision": 50, "vitesse": 45},
     11: {"precision": 55, "vitesse": 50},
@@ -40,7 +42,7 @@ base_ref = {
     18: {"precision": 90, "vitesse": 85},
 }
 
-# 🧠 Fonction d'analyse
+# 🧠 Fonction d’analyse IA
 def generer_analyse_remate(nom, age, precision_d, precision_g, vitesse_d, vitesse_g):
     ref = base_ref.get(age, {"precision": 65, "vitesse": 60})
     precision_moy = (precision_d + precision_g) / 2
@@ -63,7 +65,7 @@ Puis, propose un plan d'action personnalisé avec 3 à 5 conseils concrets pour 
 """
 
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Tu es un entraîneur professionnel spécialisé en analyse technique du football."},
@@ -102,7 +104,7 @@ if st.button("✅ Ajouter ce test"):
     else:
         st.warning("⚠️ Veuillez remplir toutes les informations du joueur.")
 
-# 📤 Résultats
+# 📤 Affichage des résultats
 if st.session_state["tests_remate"]:
     st.markdown("### 📊 Résultat du dernier test")
     dernier = st.session_state["tests_remate"][-1]
