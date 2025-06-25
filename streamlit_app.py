@@ -1,22 +1,23 @@
 import streamlit as st
 from datetime import datetime
-import openai
+from openai import OpenAI
 
-# Configuração da chave OpenAI
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# Inicializa cliente OpenAI com chave secreta
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.set_page_config(page_title="Analyse Professionnelle – Agilité Réactive", layout="wide")
 st.title("🚀 IA Soccer – Analyse Professionnelle de l'Agilité Réactive")
 
-# Inicialização
+# Inicialização da sessão
 if "agility_pro_tests" not in st.session_state:
     st.session_state["agility_pro_tests"] = []
 
-# Interface – dados do jogador
+# Interface do jogador
 st.markdown("### 👤 Informations sur le joueur")
 nom = st.text_input("Nom du joueur")
 age = st.number_input("Âge", min_value=8, max_value=18, step=1)
 
+# Parâmetros do teste
 st.markdown("### 🧪 Détails du test")
 pression = st.selectbox("Niveau de pression", [
     "🟢 Faible (4 sec)",
@@ -26,7 +27,7 @@ pression = st.selectbox("Niveau de pression", [
 temps_moyen = st.number_input("Temps moyen de réaction (en secondes)", min_value=0.0, step=0.1)
 taps_reussis = st.number_input("Nombre de pods tapés avec succès (sur 30)", min_value=0, max_value=30, step=1)
 
-# Função com IA – gerar análise e plano
+# Função de geração de análise com IA (GPT-4)
 def generer_analyse_ia(age, pression, taps, temps):
     prompt = f"""
 Tu es un entraîneur de haut niveau en football spécialisé dans l'agilité réactive. Un joueur de {age} ans a effectué un test d'agilité réactive avec un niveau de pression '{pression}'. 
@@ -38,9 +39,8 @@ Il a réussi {taps} touches sur 30 pods, avec un temps moyen de réaction de {te
 
 Réponds de façon professionnelle, concise et en français.
 """
-
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Tu es un coach expert dans l'analyse de performance des joueurs de football."},
@@ -51,9 +51,9 @@ Réponds de façon professionnelle, concise et en français.
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"❌ Erreur IA: {str(e)}"
+        return f"❌ Erreur IA : {str(e)}"
 
-# Adicionar o teste
+# Botão para adicionar teste
 if st.button("➕ Ajouter ce test"):
     analyse_ia = generer_analyse_ia(age, pression, taps_reussis, temps_moyen)
     test = {
@@ -68,20 +68,21 @@ if st.button("➕ Ajouter ce test"):
     st.session_state["agility_pro_tests"].append(test)
     st.success("✅ Test ajouté avec succès.")
 
-# Mostrar os testes
+# Exibição dos testes
 st.markdown("### 📊 Tests enregistrés")
 for i, t in enumerate(st.session_state["agility_pro_tests"]):
     st.write(f"**Test {i+1} – {t['date']}**")
     st.write(f"👤 {t['nom']} | Âge: {t['âge']} | Pression: {t['pression']}")
     st.write(f"🎯 Taps réussis: {t['taps']} /30")
     st.write(f"⏱️ Temps moyen: {t['temps']} secondes")
-    st.markdown(f"🧠 **Analyse IA**:\n\n{t['analyse']}")
+    st.markdown(f"🧠 **Analyse IA** :\n\n{t['analyse']}")
     st.markdown("---")
 
-# Gerar relatório (em breve exportação PDF)
+# Botão para gerar relatório (futuro PDF e Google Drive)
 if st.session_state["agility_pro_tests"]:
     if st.button("📄 Générer le rapport final"):
-        st.markdown("✅ **Rapport généré. Exportation PDF et sauvegarde Google Drive disponibles bientôt.**")
+        st.markdown("✅ Rapport généré. (Exportation PDF et sauvegarde Google Drive disponibles bientôt)")
+
 
 
 
