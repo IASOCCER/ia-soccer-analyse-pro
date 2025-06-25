@@ -76,9 +76,9 @@ Puis, propose un plan d'action personnalisé avec 3 à 5 conseils concrets pour 
             temperature=0.7
         )
         return comparaison + "\n" + response.choices[0].message.content
-    except openai.error.AuthenticationError:
-        return "❌ Erreur d'authentification – vérifie ta clé API OpenAI."
     except Exception as e:
+        if "authentication" in str(e).lower():
+            return "❌ Erreur d'authentification – vérifie ta clé API OpenAI."
         return f"❌ Une erreur est survenue : {e}"
 
 # ➕ Ajouter le test
@@ -113,5 +113,6 @@ if st.session_state["tests_remate"]:
 
     st.markdown("### 🧠 Analyse IA")
     st.markdown(dernier["Analyse IA"])
+
 
 
