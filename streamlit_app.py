@@ -636,27 +636,59 @@ Sois concis, professionnel et motivant.
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
 
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+import io
+import pandas as pd
 
-# 1. Configuração da autenticação
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-client = gspread.authorize(creds)
+# Reunir todos os testes (já salvos nas sessões)
+resultats = []
 
-# 2. Abrir a planilha e a aba
-spreadsheet = client.open("IA Soccer Analyse Pro")
-worksheet = spreadsheet.worksheet("Historique")
+if "passe_tests" in st.session_state:
+    for test in st.session_state["passe_tests"]:
+        test["Type"] = "Passe"
+        resultats.append(test)
 
-# 3. Dados do jogador (exemplo fixo, depois colocamos dinâmico)
-nom = "Jean Dupont"
-age = 14
-exercice = "Sprint 10m"
-resultat = "2.01s"
-date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+if "remate_tests" in st.session_state:
+    for test in st.session_state["remate_tests"]:
+        test["Type"] = "Remate"
+        resultats.append(test)
 
-# 4. Inserir os dados na planilha
-worksheet.append_row([nom, age, exercice, resultat, date])
-print("✅ Données envoyées à la feuille Google.")
+if "sprint_tests" in st.session_state:
+    for test in st.session_state["sprint_tests"]:
+        test["Type"] = "Sprint"
+        resultats.append(test)
 
+if "agilite_tests" in st.session_state:
+    for test in st.session_state["agilite_tests"]:
+        test["Type"] = "Agilité"
+        resultats.append(test)
+
+if "conduite_tests" in st.session_state:
+    for test in st.session_state["conduite_tests"]:
+        test["Type"] = "Conduite"
+        resultats.append(test)
+
+if "muscle_tests" in st.session_state:
+    for test in st.session_state["muscle_tests"]:
+        test["Type"] = "Masse musculaire"
+        resultats.append(test)
+
+# Mostrar e exportar se houver dados
+if resultats:
+    df = pd.DataFrame(resultats)
+
+    st.markdown("### ✅ Résumé de tous les tests")
+    st.dataframe(df)
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Résultats')
+        writer.save()
+
+    st.download_button(
+        label="📁 Télécharger le rapport complet (Excel)",
+        data=buffer,
+        file_name="rapport_complet_IA_Soccer.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+else:
+    st.warning("Aucun test enregistré pour ce joueur.")
