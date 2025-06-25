@@ -639,80 +639,63 @@ Sois concis, professionnel et motivant.
 import io
 import pandas as pd
 
-# Coletar todos os dados
-donnees = []
+# Recolher todos os testes
+dataframes = {
+    "Passe": pd.DataFrame(st.session_state.get("tests_passe", [])),
+    "Conduite": pd.DataFrame(st.session_state.get("conduite_tests", [])),
+    "Remate": pd.DataFrame(st.session_state.get("tests_remate", [])),
+    "Sprint": pd.DataFrame(st.session_state.get("sprint_tests", [])),
+    "Agilité": pd.DataFrame(st.session_state.get("agility_tests", [])),
+    "Masse Musculaire": pd.DataFrame(st.session_state.get("muscle_tests", []))
+}
 
-# Passe
-for test in st.session_state.get("tests_passe", []):
-    donnees.append({
-        "Exercice": "Passe",
-        "Pied": test.get("Pied"),
-        "Pression": test.get("Pression"),
-        "Précision (%)": test.get("Précision (%)"),
-        "Temps moyen (s)": test.get("Temps moyen (s)")
-    })
+# Gerar a synthèse IA
+prompt_global = f"""
+Tu es un analyste de performance pour jeunes joueurs de football.
 
-# Conduite
-for test in st.session_state.get("conduite_tests", []):
-    donnees.append({
-        "Exercice": "Conduite",
-        "Parcours": test.get("Parcours"),
-        "Temps (s)": test.get("Temps (s)"),
-        "Niveau": test.get("Niveau")
-    })
+Fais un résumé global de la performance de {nom}, {age} ans, à partir de ses tests techniques et physiques dans les domaines suivants : passe, conduite, remate, sprint, agilité, masse musculaire.
 
-# Remate
-for test in st.session_state.get("tests_remate", []):
-    donnees.append({
-        "Exercice": "Remate",
-        "Précision Droit (%)": test.get("Précision Droit (%)"),
-        "Précision Gauche (%)": test.get("Précision Gauche (%)"),
-        "Vitesse Moy. Droit (km/h)": test.get("Vitesse Moy. Droit (km/h)"),
-        "Vitesse Moy. Gauche (km/h)": test.get("Vitesse Moy. Gauche (km/h)")
-    })
+Donne :
+1. Une évaluation globale (Excellent / Bon / Moyen / À améliorer)
+2. Les points forts
+3. Les axes de progression
+4. Un plan d’action général sur 4 semaines
 
-# Sprint
-for test in st.session_state.get("sprint_tests", []):
-    donnees.append({
-        "Exercice": "Sprint",
-        "Type": test.get("type"),
-        "Temps": test.get("temps"),
-        "Niveau": test.get("niveau"),
-        "Note": test.get("note")
-    })
+Sois concis, professionnel et motivant.
+"""
 
-# Agilité
-for test in st.session_state.get("agility_tests", []):
-    donnees.append({
-        "Exercice": "Agilité",
-        "Pression": test.get("Pression"),
-        "Temps moyen": test.get("Temps moyen"),
-        "Touches": test.get("Touches")
-    })
+if st.button("📥 Télécharger le rapport complet (Excel)"):
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Tu es un préparateur de football jeunesse."},
+                {"role": "user", "content": prompt_global}
+            ],
+            temperature=0.7,
+            max_tokens=600
+        )
+        synthese_ia = response.choices[0].message.content
+        st.success("✅ Rapport généré avec succès.")
 
-# Masse musculaire
-for test in st.session_state.get("muscle_tests", []):
-    donnees.append({
-        "Exercice": "Masse musculaire",
-        "Poids": test.get("poids"),
-        "Masse musculaire": test.get("masse_musculaire"),
-        "Niveau": test.get("niveau"),
-        "Note": test.get("note")
-    })
+        # Criar buffer para exportação
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+            for nom_onglet, df in dataframes.items():
+                if not df.empty:
+                    df.to_excel(writer, sheet_name=nom_onglet, index=False)
 
-# Criar DataFrame final
-df = pd.DataFrame(donnees)
+            # Aba com a synthèse IA
+            synthese_df = pd.DataFrame({"Synthèse IA": [synthese_ia]})
+            synthese_df.to_excel(writer, sheet_name="Synthèse IA", index=False)
 
-# Exportar para Excel
-buffer = io.BytesIO()
-with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-    df.to_excel(writer, index=False, sheet_name="Analyse complète")
+        st.download_button(
+            label="📥 Télécharger le rapport complet (Excel)",
+            data=buffer.getvalue(),
+            file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except Exception as e:
+        st.error(f"❌ Erreur lors de la génération du rapport : {str(e)}")
 
-# Botão para download
-st.download_button(
-    label="📥 Télécharger le rapport complet (Excel)",
-    data=buffer.getvalue(),
-    file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
 
