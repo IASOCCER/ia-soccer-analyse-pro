@@ -1,108 +1,116 @@
 import streamlit as st
+import pandas as pd
+import os
 from datetime import datetime
-from openai import OpenAI
 
-# Cliente OpenAI
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+st.set_page_config(page_title="IA Soccer Analyse Pro", layout="wide")
+st.sidebar.image("https://iasoccer.com/wp-content/uploads/2024/09/IA-SOCCER-FC-PORTO-WHITE.png", width=250)
+st.sidebar.title("IA Soccer Analyse Pro")
 
-st.set_page_config(page_title="Analyse de la Masse Musculaire – IA Soccer", layout="wide")
-st.title("💪 IA Soccer – Évaluation de la Masse Musculaire")
+# Menu lateral
+page = st.sidebar.selectbox("Choisissez une section :", [
+    "🏠 Accueil",
+    "🧍 Informations du joueur",
+    "🎯 Test de Passe",
+    "📊 Rapport Global"
+])
 
-# Initialisation
-if "muscle_tests" not in st.session_state:
-    st.session_state["muscle_tests"] = []
+# Base de dados temporária
+if "joueur" not in st.session_state:
+    st.session_state["joueur"] = {}
 
-st.markdown("### 👤 Informations sur le joueur")
-nom = st.text_input("Nom du joueur")
-age = st.number_input("Âge", min_value=8, max_value=18, step=1)
+if "passe_tests" not in st.session_state:
+    st.session_state["passe_tests"] = []
 
-st.markdown("### ⚖️ Données de composition corporelle")
-poids = st.number_input("Poids total (kg)", min_value=10.0, step=0.1)
-masse_musculaire = st.number_input("Masse musculaire (kg)", min_value=5.0, step=0.1)
+# Função para análise automática
+def analyser_passe(test):
+    precision = test["précision"]
+    temps_moyen = test["temps_moyen"]
 
-# Références par âge
-def get_reference_muscle(age):
-    if age <= 10:
-        return {"excellent": 20, "bon": 16}
-    elif age <= 12:
-        return {"excellent": 25, "bon": 20}
-    elif age <= 14:
-        return {"excellent": 30, "bon": 25}
-    elif age <= 16:
-        return {"excellent": 35, "bon": 30}
+    # Notas baseadas em precisão e tempo
+    if precision >= 80 and temps_moyen <= 3:
+        note = "Excellent"
+        plan = "Maintenir l'entraînement actuel. Ajouter des passes en mouvement."
+    elif precision >= 60:
+        note = "Bon"
+        plan = "Améliorer la vitesse d'exécution. Travailler la précision sous pression."
     else:
-        return {"excellent": 40, "bon": 34}
+        note = "À améliorer"
+        plan = "Focaliser sur la technique de passe. Réduire le temps de réaction."
 
-# Évaluation simple
-def evaluer_muscle(age, masse):
-    ref = get_reference_muscle(age)
-    note = 100
-    if masse >= ref["excellent"]:
-        niveau = "Excellent"
-    elif masse >= ref["bon"]:
-        note -= 15
-        niveau = "Bon"
+    return note, plan
+
+# ACCUEIL
+if page == "🏠 Accueil":
+    st.title("Bienvenue à IA Soccer Analyse Pro ⚽")
+    st.markdown("Cette plateforme permet d'évaluer la performance technique et physique des joueurs de 8 à 18 ans.")
+    st.markdown("Utilisez le menu à gauche pour naviguer entre les tests.")
+    st.info("🔐 Le système est en version test. Le stockage dans Google Drive sera activé dans les prochaines étapes.")
+
+# INFOS JOUEUR
+elif page == "🧍 Informations du joueur":
+    st.title("🧍 Informations du joueur")
+    nom = st.text_input("Nom complet")
+    age = st.number_input("Âge", min_value=8, max_value=18)
+    categorie = st.selectbox("Catégorie", ["U8", "U9", "U10", "U11", "U12", "U13", "U14", "U15", "U16", "U17", "U18"])
+    position = st.selectbox("Position", ["Gardien", "Défenseur", "Milieu", "Attaquant"])
+
+    if st.button("✅ Sauvegarder les informations"):
+        st.session_state["joueur"] = {
+            "nom": nom,
+            "âge": age,
+            "catégorie": categorie,
+            "position": position
+        }
+        st.success("Informations du joueur sauvegardées.")
+
+# TEST DE PASSE
+elif page == "🎯 Test de Passe":
+    st.title("🎯 Test de Passe – Analyse avec IA")
+
+    if not st.session_state["joueur"]:
+        st.warning("Veuillez d'abord remplir les informations du joueur.")
     else:
-        note -= 30
-        niveau = "À améliorer"
-    return niveau, note, ref
+        col1, col2 = st.columns(2)
+        with col1:
+            precision = st.slider("🎯 Précision (%)", 0, 100, 50)
+        with col2:
+            temps = st.number_input("⏱️ Temps moyen (secondes)", min_value=0.0, step=0.1)
 
-# Analyse IA
-def generer_analyse_muscle(nom, age, poids, masse, niveau):
-    pourcentage = (masse / poids) * 100
-    prompt = f"""
-Le joueur {nom}, âgé de {age} ans, a été évalué avec une masse musculaire de {masse:.1f} kg sur un poids total de {poids:.1f} kg, soit environ {pourcentage:.1f}% de masse musculaire. Son niveau a été classé : {niveau}.
+        pied = st.selectbox("🦶 Pied utilisé", ["Droit", "Gauche"])
+        pression = st.selectbox("💥 Niveau de pression", ["Faible", "Moyenne", "Élevée"])
 
-Fournis une analyse professionnelle de sa composition corporelle et un plan d'action personnalisé pour améliorer sa masse musculaire et sa condition physique. Inclure si pertinent des suggestions nutritionnelles et de renforcement musculaire.
+        if st.button("➕ Ajouter ce test"):
+            test = {
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "précision": precision,
+                "temps_moyen": temps,
+                "pied": pied,
+                "pression": pression
+            }
+            note, plan = analyser_passe(test)
+            test["note"] = note
+            test["plan_action"] = plan
+            st.session_state["passe_tests"].append(test)
+            st.success("Test ajouté.")
 
-Réponds en français de façon structurée, claire et adaptée à son âge.
-"""
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Tu es un préparateur physique expert en jeunes athlètes de football."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"❌ Erreur IA : {str(e)}"
+        if st.session_state["passe_tests"]:
+            st.markdown("### 📄 Résumé des tests de passe")
+            df = pd.DataFrame(st.session_state["passe_tests"])
+            st.dataframe(df)
 
-# Ajouter le test
-if st.button("➕ Ajouter ce test"):
-    niveau, note, ref = evaluer_muscle(age, masse_musculaire)
-    analyse = generer_analyse_muscle(nom, age, poids, masse_musculaire, niveau)
-    test = {
-        "nom": nom,
-        "âge": age,
-        "poids": poids,
-        "masse_musculaire": masse_musculaire,
-        "niveau": niveau,
-        "note": note,
-        "réf": ref,
-        "analyse": analyse,
-        "date": datetime.now().strftime("%d/%m/%Y %H:%M")
-    }
-    st.session_state["muscle_tests"].append(test)
-    st.success("✅ Test ajouté avec succès.")
+            if st.button("📤 Exporter vers fichier CSV"):
+                joueur = st.session_state["joueur"]
+                filename = f"{joueur['nom'].replace(' ', '_')}_passe.csv"
+                df.to_csv(filename, index=False)
+                st.success(f"Fichier sauvegardé : {filename}")
 
-# Affichage
-st.markdown("### 📊 Tests enregistrés")
-for i, t in enumerate(st.session_state["muscle_tests"]):
-    pourcent = (t['masse_musculaire'] / t['poids']) * 100
-    st.write(f"**Test {i+1} – {t['date']}**")
-    st.write(f"👤 {t['nom']} | Âge: {t['âge']}")
-    st.write(f"⚖️ Masse musculaire: {t['masse_musculaire']} kg / {t['poids']} kg ({pourcent:.1f}%)")
-    st.write(f"📈 Note: {t['note']} /100 – Niveau: **{t['niveau']}**")
-    st.markdown(f"🧠 **Analyse IA** :\n\n{t['analyse']}")
-    st.markdown("---")
+# RAPPORT GLOBAL
+elif page == "📊 Rapport Global":
+    st.title("📊 Rapport Global")
+    st.markdown("⚠️ Cette section affichera bientôt tous les tests et générera un rapport automatique avec IA.")
+    st.warning("Encore en construction. Revenez bientôt !")
 
-if st.session_state["muscle_tests"]:
-    if st.button("📄 Générer le rapport final"):
-        st.markdown("✅ Rapport généré. (Exportation PDF et sauvegarde Google Drive à venir.)")
 
 
 
