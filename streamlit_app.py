@@ -635,3 +635,28 @@ Sois concis, professionnel et motivant.
             st.markdown(response.choices[0].message.content)
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
+
+# 1. Configuração da autenticação
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+client = gspread.authorize(creds)
+
+# 2. Abrir a planilha e a aba
+spreadsheet = client.open("IA Soccer Analyse Pro")
+worksheet = spreadsheet.worksheet("Historique")
+
+# 3. Dados do jogador (exemplo fixo, depois colocamos dinâmico)
+nom = "Jean Dupont"
+age = 14
+exercice = "Sprint 10m"
+resultat = "2.01s"
+date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# 4. Inserir os dados na planilha
+worksheet.append_row([nom, age, exercice, resultat, date])
+print("✅ Données envoyées à la feuille Google.")
+
