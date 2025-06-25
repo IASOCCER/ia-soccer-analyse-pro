@@ -581,6 +581,8 @@ Réponds en français de façon structurée, claire et adaptée à son âge.
             st.write(f"📈 Note: {t['note']} /100 – Niveau: **{t['niveau']}**")
             st.markdown(f"🧠 **Analyse IA** :\n\n{t['analyse']}")
             st.markdown("---")
+
+
 elif page == "📊 Rapport Global":
     verifier_joueur()
     st.title("📊 Rapport Global du Joueur")
@@ -597,8 +599,8 @@ elif page == "📊 Rapport Global":
             st.dataframe(df[colonnes], use_container_width=True)
         else:
             st.info(f"Aucun test enregistré pour **{titre}**.")
-
-    # Résumé pour chaque test
+    
+    # Résumé par section
     afficher_section("🎯 Passe", st.session_state.get("tests_passe", []), ["Pied", "Pression", "Précision (%)", "Temps moyen (s)"])
     afficher_section("🛞 Conduite", st.session_state.get("conduite_tests", []), ["Parcours", "Temps (s)", "Niveau"])
     afficher_section("⚽ Remate", st.session_state.get("tests_remate", []), ["Précision Droit (%)", "Précision Gauche (%)", "Vitesse Moy. Droit (km/h)", "Vitesse Moy. Gauche (km/h)"])
@@ -607,6 +609,9 @@ elif page == "📊 Rapport Global":
     afficher_section("💪 Masse musculaire", st.session_state.get("muscle_tests", []), ["poids", "masse_musculaire", "niveau", "note"])
 
     st.markdown("### 🧠 Synthèse IA")
+
+    commentaire_ia = ""
+
     prompt_global = f"""
 Tu es un analyste de performance pour jeunes joueurs de football.
 
@@ -620,6 +625,7 @@ Donne :
 
 Sois concis, professionnel et motivant.
 """
+
     if st.button("🧠 Générer l'analyse globale IA"):
         try:
             response = client.chat.completions.create(
@@ -631,71 +637,38 @@ Sois concis, professionnel et motivant.
                 temperature=0.7,
                 max_tokens=600
             )
+            commentaire_ia = response.choices[0].message.content
             st.success("✅ Rapport généré avec succès.")
-            st.markdown(response.choices[0].message.content)
+            st.markdown(commentaire_ia)
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
 
-import io
-import pandas as pd
+    # EXPORT EXCEL COMPLET
+    import io
+    buffer = io.BytesIO()
 
-# Recolher todos os testes
-dataframes = {
-    "Passe": pd.DataFrame(st.session_state.get("tests_passe", [])),
-    "Conduite": pd.DataFrame(st.session_state.get("conduite_tests", [])),
-    "Remate": pd.DataFrame(st.session_state.get("tests_remate", [])),
-    "Sprint": pd.DataFrame(st.session_state.get("sprint_tests", [])),
-    "Agilité": pd.DataFrame(st.session_state.get("agility_tests", [])),
-    "Masse Musculaire": pd.DataFrame(st.session_state.get("muscle_tests", []))
-}
+    # Criação dos DataFrames
+    sections = {
+        "🎯 Passe": pd.DataFrame(st.session_state.get("tests_passe", [])),
+        "🛞 Conduite": pd.DataFrame(st.session_state.get("conduite_tests", [])),
+        "⚽ Remate": pd.DataFrame(st.session_state.get("tests_remate", [])),
+        "🏃‍♂️ Sprint": pd.DataFrame(st.session_state.get("sprint_tests", [])),
+        "🚀 Agilité": pd.DataFrame(st.session_state.get("agility_tests", [])),
+        "💪 Masse musculaire": pd.DataFrame(st.session_state.get("muscle_tests", [])),
+        "🧠 Analyse IA": pd.DataFrame([{"Analyse complète IA": commentaire_ia}]) if commentaire_ia else pd.DataFrame()
+    }
 
-# Gerar a synthèse IA
-prompt_global = f"""
-Tu es un analyste de performance pour jeunes joueurs de football.
+    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+        for nom_section, df in sections.items():
+            if not df.empty:
+                sheet_name = nom_section.replace("🎯", "Passe").replace("🛞", "Conduite").replace("⚽", "Remate")\
+                                        .replace("🏃‍♂️", "Sprint").replace("🚀", "Agilité").replace("💪", "Muscle")\
+                                        .replace("🧠", "IA")[:30]  # Limite do Excel
+                df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-Fais un résumé global de la performance de {nom}, {age} ans, à partir de ses tests techniques et physiques dans les domaines suivants : passe, conduite, remate, sprint, agilité, masse musculaire.
-
-Donne :
-1. Une évaluation globale (Excellent / Bon / Moyen / À améliorer)
-2. Les points forts
-3. Les axes de progression
-4. Un plan d’action général sur 4 semaines
-
-Sois concis, professionnel et motivant.
-"""
-
-if st.button("📥 Télécharger le rapport complet (Excel)"):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Tu es un préparateur de football jeunesse."},
-                {"role": "user", "content": prompt_global}
-            ],
-            temperature=0.7,
-            max_tokens=600
-        )
-        synthese_ia = response.choices[0].message.content
-        st.success("✅ Rapport généré avec succès.")
-
-        # Criar buffer para exportação
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-            for nom_onglet, df in dataframes.items():
-                if not df.empty:
-                    df.to_excel(writer, sheet_name=nom_onglet, index=False)
-
-            # Aba com a synthèse IA
-            synthese_df = pd.DataFrame({"Synthèse IA": [synthese_ia]})
-            synthese_df.to_excel(writer, sheet_name="Synthèse IA", index=False)
-
-        st.download_button(
-            label="📥 Télécharger le rapport complet (Excel)",
-            data=buffer.getvalue(),
-            file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    except Exception as e:
-        st.error(f"❌ Erreur lors de la génération du rapport : {str(e)}")
-
-
+    st.download_button(
+        label="📥 Télécharger le rapport complet (Excel)",
+        data=buffer.getvalue(),
+        file_name=f"rapport_{nom.replace(' ', '_')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
